@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/textArchitecture"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="当前架构: MVVM"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="8dp"
+        android:background="#E3F2FD"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/textTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="标题"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#212121" />
+
+    <TextView
+        android:id="@+id/textDifficulty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="难度"
+        android:textSize="16sp"
+        android:textColor="#1976D2"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/textDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="描述"
+        android:textSize="16sp"
+        android:textColor="#424242"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/textSolution"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="解决方案"
+        android:textSize="16sp"
+        android:textColor="#424242"
+        android:layout_marginTop="24dp" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:id="@+id/textSolutionContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="解决方案内容"
+            android:textSize="14sp"
+            android:textColor="#616161"
+            android:lineSpacingMultiplier="1.5" />
+
+    </ScrollView>
+
+</LinearLayout>

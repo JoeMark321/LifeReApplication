@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JavaScriptLibraryMappings">
+    <includedPredefinedLibrary name="Node.js Core" />
+  </component>
+  <component name="ProjectTasksOptions">
+    <enabled-global>
+      <option value="Less" />
+      <option value="TypeScript" />
+    </enabled-global>
+  </component>
+  <component name="TimeTrackingManager">
+    <option name="totallyTimeSpent" value="99000" />
+  </component>
+  <component name="TypeScriptCompiler">
+    <option name="typeScriptServiceDirectory" value="D:/develop/nvm/node_global/node_modules/typescript" />
+    <option name="versionType" value="SERVICE_DIRECTORY" />
+  </component>
+</project>
