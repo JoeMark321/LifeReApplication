@@ -2,26 +2,33 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/bg_page">
 
-    <TextView
-        android:id="@+id/textArchitecture"
+    <!-- 顶部工具栏：右上角溢出菜单（⋮）由代码填充 -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="当前架构: MVVM"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:padding="16dp"
-        android:background="#E3F2FD" />
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/brand_primary"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        android:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
+    <!--
+      列表是页面唯一滚动容器：
+      ① 避免 ScrollView 嵌套 RecyclerView 导致的“一次性测量全部 Item”，
+         保证非可见项不会被创建与绑定（真正的懒加载）；
+      ② 保证 RecyclerView 自身的复用与回收机制生效。
+      头部引导内容作为 Adapter 的第 0 项参与复用。
+    -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="8dp"
         android:clipToPadding="false"
+        android:paddingTop="4dp"
+        android:paddingBottom="16dp"
         android:scrollbars="vertical" />
 
 </LinearLayout>

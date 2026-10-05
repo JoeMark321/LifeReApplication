@@ -2,4 +2,39 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- 品牌色 -->
+    <color name="brand_primary">#1565C0</color>
+    <color name="brand_primary_dark">#0D47A1</color>
+    <color name="brand_accent">#00897B</color>
+    <color name="brand_warn">#EF6C00</color>
+
+    <!-- 背景与表面 -->
+    <color name="bg_page">#F5F7FA</color>
+    <color name="bg_card">#FFFFFFFF</color>
+    <color name="bg_chip">#E3F2FD</color>
+    <color name="divider">#E0E0E0</color>
+
+    <!-- 文本 -->
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#616161</color>
+    <color name="text_hint">#9E9E9E</color>
+
+    <!-- Snackbar -->
+    <color name="snackbar_bg">#323232</color>
+    <color name="snackbar_text">#FFFFFF</color>
+
+    <!-- 生命周期流程视图 -->
+    <color name="stage_passed">#C8E6C9</color>
+    <color name="stage_passed_text">#1B5E20</color>
+    <color name="stage_current">#1565C0</color>
+    <color name="stage_current_text">#FFFFFF</color>
+    <color name="stage_idle">#ECEFF1</color>
+    <color name="stage_idle_text">#607D8B</color>
+    <color name="stage_arrow">#B0BEC5</color>
+
+    <!-- 难度标签 -->
+    <color name="level_easy">#2E7D32</color>
+    <color name="level_medium">#EF6C00</color>
+    <color name="level_hard">#C62828</color>
 </resources>

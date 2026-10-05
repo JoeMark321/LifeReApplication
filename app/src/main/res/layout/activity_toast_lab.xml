@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_page">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/brand_primary"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        android:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="三套 Toast 实现对比：原生（系统样式）→ 自定义（图标+圆角）→ 现代化（Snackbar，可带按钮）。全部经 ToastCenter 统一出口，可在【设置】里关掉任何一种。"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:lineSpacingMultiplier="1.4" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="1. 原生 Toast"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnNative"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="弹出原生 Toast（样式不可定制）" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="2. 自定义 Toast（重写样式）"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnCustomSuccess"
+                    style="@style/Widget.AppCompat.Button.Small"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="成功" />
+
+                <Button
+                    android:id="@+id/btnCustomError"
+                    style="@style/Widget.AppCompat.Button.Small"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="错误" />
+
+                <Button
+                    android:id="@+id/btnCustomWarning"
+                    style="@style/Widget.AppCompat.Button.Small"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="警告" />
+
+                <Button
+                    android:id="@+id/btnCustomInfo"
+                    style="@style/Widget.AppCompat.Button.Small"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="信息" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="3. 现代化 Toast（Snackbar）"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnModern"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="弹出 Snackbar（可上滑关闭）" />
+
+            <Button
+                android:id="@+id/btnModernAction"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Snackbar + 撤销按钮（交互式提示）" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="4. 静默 / 组合提示"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnSilent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="静默提示（只写 Logcat，不打扰）" />
+
+            <Button
+                android:id="@+id/btnDialog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="模态对话框（需要用户确认的场景）" />
+
+            <Button
+                android:id="@+id/btnNotify"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="系统通知（后台提示，点击回首页）" />
+
+            <Button
+                android:id="@+id/btnCenter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ToastCenter 按用户偏好样式提示" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

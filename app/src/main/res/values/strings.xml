@@ -1,4 +1,8 @@
 <resources>
-    <string name="app_name">LifeReApplication</string>
-    <string name="detail_title">问题详情</string>
+    <string name="app_name">生命周期Re</string>
+
+    <!-- 首页引导文案 -->
+    <string name="home_guide">从上往下读：先看流程图的执行方向，再从序号 1 开始逐个解决难题。点击任意卡片查看完整解答，右上角 ⋮ 可切换页面。</string>
+    <string name="flow_hint_current">当前阶段：onCreate — Activity 正在被创建，此时只做一次性初始化。</string>
+    <string name="flow_hint_intro">跟着箭头走一遍，比背七行方法名更有用。</string>
 </resources>
