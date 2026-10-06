@@ -283,19 +283,18 @@ viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
 
 ### 5A.6 列表演演三 · 自定义底部导航（新增页面）
 
-结构复用演示一（三 tab + MODE_EXACT 精确恢复 + tab 记忆），**差异全在底部导航的自定义样式**：
+结构复用演示一（三 tab + MODE_EXACT 精确恢复 + tab 记忆），**底部 tab 行全自定义**（v2 改版：弃用 BottomNavigationView）：
 
 | 样式项 | 实现 |
 |---|---|
-| 悬浮圆角底座 | `bg_bottom_bar`：白底 + 20dp 圆角 + 描边，四周 12dp 边距 + elevation 6dp（脱离系统全宽灰条） |
-| 选中指示器 | `itemActiveIndicatorStyle=@style/ThirdNavIndicator` → `bg_nav_indicator` 品牌色胶囊 |
-| 图标/文字着色 | `res/color/nav_item_tint` selector：checked=品牌蓝，未选=text_hint |
-| 文字常显 | `labelVisibilityMode="labeled"` |
-| 涟漪 | `itemRippleColor=bg_chip` |
+| 悬浮圆角底座 | `bg_bottom_bar`：白底 + 20dp 圆角 + 描边，四周 12dp 边距 + elevation 6dp |
+| tab 本体 | 三个等宽 TextView（**纯文字、无图标**），背景 `bg_tab_item` selector |
+| 选中态 | `android:selected` 驱动：背景=品牌蓝胶囊（`bg_tab_selected`）、文字=白色 |
+| 未选态 | 透明背景 + 灰字（`tab_text_tint` selector） |
+| 状态驱动 | `TextView.setSelected()` + selector，无需手写背景切换代码 |
 
-状态隔离：listId 前缀 `third.*`、tab 记忆独立 key `list_tab.third`（AppPreferences 新增通用 `getListTab/setListTab(pageKey, tag)`，新页面接入 tab 记忆零成本）。
-
-> 踩坑记录：style 名 `Third.NavIndicator` 带点会被 AAPT 解析为隐式父样式 `Third`（不存在）导致链接失败——自定义样式名避免点号，或确保前缀存在。
+> 踩坑两条：① BottomNavigationView 自定义指示器与默认图标组合观感差且难控（首次实现被否），改为全自定义 tab 行；② style 名带点（`Third.NavIndicator`）会被 AAPT 解析为隐式父样式导致链接失败。
+> 状态隔离：listId 前缀 `third.*`、tab 记忆独立 key `list_tab.third`（AppPreferences 通用 `getListTab/setListTab(pageKey, tag)`）。
 
 ### 5A.4.1 能否全局设置状态保持？
 

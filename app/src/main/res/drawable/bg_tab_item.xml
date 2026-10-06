@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 列表演演三：tab 背景（选中=品牌胶囊，未选=透明），配 duplicateParentState/selected 使用 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/bg_tab_selected" android:state_selected="true" />
+    <item android:drawable="@android:color/transparent" />
+</selector>

@@ -1,8 +1,8 @@
 package com.example.lifereapplication.ui.list;
 
 import android.os.Bundle;
+import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -17,7 +17,6 @@ import com.example.lifereapplication.ui.nav.NavDestination;
 import com.example.lifereapplication.ui.settings.SettingsActivity;
 import com.example.lifereapplication.ui.toast.ToastLabActivity;
 import com.example.lifereapplication.util.toast.CustomToast;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,16 +25,14 @@ import java.util.List;
  * 列表演演三 · 自定义底部导航。
  *
  * <p>结构复用演示一（三 tab 列表 + 精确恢复 MODE_EXACT + tab 记忆），
- * 差异在<b>底部导航的自定义样式</b>：</p>
+ * 差异在<b>底部 tab 行全自定义</b>（不依赖 BottomNavigationView）：</p>
  * <ul>
- *     <li>悬浮圆角卡片底座（12dp 边距 + 20dp 圆角 + 描边，elevation 6dp）；</li>
- *     <li>选中指示器换品牌色胶囊（itemActiveIndicatorStyle）；</li>
- *     <li>图标/文字 selector 着色：选中品牌蓝 / 未选提示灰；</li>
- *     <li>labeled 模式强制三 tab 常显文字。</li>
+ *     <li>悬浮白底圆角条（12dp 边距 + 20dp 圆角 + 描边 + elevation）；</li>
+ *     <li>三个纯文字 tab（无图标干扰）：选中 = 品牌蓝胶囊 + 白字，未选 = 透明 + 灰字；</li>
+ *     <li>状态由 {@code android:selected} 驱动，背景/文字全部走 selector。</li>
  * </ul>
  *
- * <p>状态隔离：listId 前缀 {@code third.*} 与演示一（demo 页 tag）、
- * 演示二（demo.second）互不串扰；tab 记忆用独立 key {@code list_tab.third}。</p>
+ * <p>状态隔离：listId 前缀 {@code third.*}、tab 记忆独立 key {@code list_tab.third}。</p>
  */
 public class ListDemoThirdActivity extends BaseMenuActivity {
 
@@ -45,6 +42,9 @@ public class ListDemoThirdActivity extends BaseMenuActivity {
     private static final String TAG_GRID3 = "third.grid3";
 
     private AppPreferences prefs;
+    private TextView tabLinear;
+    private TextView tabGrid;
+    private TextView tabGrid3;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -53,35 +53,27 @@ public class ListDemoThirdActivity extends BaseMenuActivity {
         setupToolbar();
         prefs = new AppPreferences(this);
 
-        BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
-        bottomNav.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            String tag;
-            if (id == R.id.nav_linear) {
-                tag = TAG_LINEAR;
-            } else if (id == R.id.nav_grid) {
-                tag = TAG_GRID2;
-            } else if (id == R.id.nav_grid3) {
-                tag = TAG_GRID3;
-            } else {
-                return false;
-            }
-            prefs.setListTab(PREF_KEY, tag);
-            showPrimary(tag);
-            return true;
-        });
+        tabLinear = findViewById(R.id.tabLinear);
+        tabGrid = findViewById(R.id.tabGrid);
+        tabGrid3 = findViewById(R.id.tabGrid3);
+
+        tabLinear.setOnClickListener(v -> selectTab(TAG_LINEAR));
+        tabGrid.setOnClickListener(v -> selectTab(TAG_GRID2));
+        tabGrid3.setOnClickListener(v -> selectTab(TAG_GRID3));
 
         // 恢复上次选中的 tab（独立 key，与演示一互不影响）
         String lastTag = prefs.getListTab(PREF_KEY);
-        int restoreId;
-        if (TAG_GRID2.equals(lastTag)) {
-            restoreId = R.id.nav_grid;
-        } else if (TAG_GRID3.equals(lastTag)) {
-            restoreId = R.id.nav_grid3;
-        } else {
-            restoreId = R.id.nav_linear;
-        }
-        bottomNav.setSelectedItemId(restoreId);
+        selectTab(TAG_GRID2.equals(lastTag) ? TAG_GRID2
+                : TAG_GRID3.equals(lastTag) ? TAG_GRID3 : TAG_LINEAR);
+    }
+
+    /** 切换 tab：selected 状态驱动 selector（胶囊背景+文字色），Fragment 走 hide/show */
+    private void selectTab(String tag) {
+        prefs.setListTab(PREF_KEY, tag);
+        tabLinear.setSelected(TAG_LINEAR.equals(tag));
+        tabGrid.setSelected(TAG_GRID2.equals(tag));
+        tabGrid3.setSelected(TAG_GRID3.equals(tag));
+        showPrimary(tag);
     }
 
     /** 主栏切换：hide/show 保视图，listId 前缀 third.* 状态独立 */

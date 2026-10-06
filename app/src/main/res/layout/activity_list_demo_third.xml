@@ -22,24 +22,56 @@
         android:layout_weight="1" />
 
     <!--
-      列表演演三的自定义底部导航（与演示一的系统默认样式形成对比）：
-      ① 悬浮圆角卡片底座（四周留 12dp 边距 + 20dp 圆角 + 描边）；
-      ② 选中指示器换成品牌色胶囊（itemActiveIndicatorStyle）；
-      ③ 图标/文字着色 selector：选中=品牌蓝，未选=提示灰；
-      ④ 强制 labeled 模式让三个 tab 始终带文字。
+      列表演演三的自定义底部 tab 行（全自定义，不依赖 BottomNavigationView）：
+      悬浮白底圆角条 + 三个纯文字 tab（无图标干扰）：
+      选中 = 品牌蓝胶囊 + 白字；未选 = 透明 + 灰字。状态用 android:selected 驱动。
     -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNav"
+    <LinearLayout
+        android:id="@+id/tabBar"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="52dp"
         android:layout_margin="12dp"
         android:background="@drawable/bg_bottom_bar"
-        app:elevation="6dp"
-        app:itemActiveIndicatorStyle="@style/ThirdNavIndicator"
-        app:itemIconTint="@color/nav_item_tint"
-        app:itemTextColor="@color/nav_item_tint"
-        app:itemRippleColor="@color/bg_chip"
-        app:labelVisibilityMode="labeled"
-        app:menu="@menu/menu_list_demo" />
+        android:elevation="6dp"
+        android:orientation="horizontal"
+        android:padding="6dp">
+
+        <TextView
+            android:id="@+id/tabLinear"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_tab_item"
+            android:gravity="center"
+            android:text="线性列表"
+            android:textColor="@color/tab_text_tint"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tabGrid"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_tab_item"
+            android:gravity="center"
+            android:text="双列网格"
+            android:textColor="@color/tab_text_tint"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tabGrid3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_tab_item"
+            android:gravity="center"
+            android:text="三列网格"
+            android:textColor="@color/tab_text_tint"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
 
 </LinearLayout>
