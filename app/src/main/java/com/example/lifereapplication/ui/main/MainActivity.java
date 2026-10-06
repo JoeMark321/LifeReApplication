@@ -46,10 +46,10 @@ public class MainActivity extends BaseMenuActivity
         // Splash 必须在 super.onCreate 之前安装：让系统开屏与我们主题无缝衔接
         androidx.core.splashscreen.SplashScreen splashScreen =
                 androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen(this);
-        // 开屏停留 1.2s（系统默认"首帧就绪即退"，太快看不清），再 300ms 淡出
+        // 开屏停留 2s（系统默认"首帧就绪即退"，太快看不清），再 300ms 淡出
         final long splashStart = android.os.SystemClock.uptimeMillis();
         splashScreen.setKeepOnScreenCondition(() ->
-                android.os.SystemClock.uptimeMillis() - splashStart < 1200);
+                android.os.SystemClock.uptimeMillis() - splashStart < 2000);
         splashScreen.setOnExitAnimationListener(splashScreenView ->
                 splashScreenView.getView().animate()
                         .alpha(0f)
