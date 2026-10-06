@@ -55,6 +55,11 @@ public abstract class BaseMenuActivity extends AppCompatActivity {
     /** 子类返回自身所属页面，用于标题与提示文案 */
     protected abstract Page page();
 
+    /** 子类可覆盖以自定义标题（默认用页面名） */
+    protected String toolbarTitle() {
+        return null;
+    }
+
     /** 子类返回本页面要展示的菜单项 */
     protected abstract List<NavDestination> destinations();
 
@@ -66,7 +71,8 @@ public abstract class BaseMenuActivity extends AppCompatActivity {
         }
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(page().getTitle());
+            String title = toolbarTitle();
+            getSupportActionBar().setTitle(title != null ? title : page().getTitle());
             getSupportActionBar().setSubtitle("MVVM 架构");
         }
     }

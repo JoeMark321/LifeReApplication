@@ -38,6 +38,11 @@
                 android:exported="false"
                 android:label="设置" />
         <activity
+                android:name=".ui.list.ListDemoActivity"
+                android:exported="false"
+                android:label="列表演示"
+                android:configChanges="orientation|screenSize" />
+        <activity
                 android:name=".ui.dialog.DialogStyleActivity"
                 android:exported="false"
                 android:label="对话框风格页面"

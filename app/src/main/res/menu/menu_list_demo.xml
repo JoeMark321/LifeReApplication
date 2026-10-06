@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_linear"
+        android:icon="@drawable/ic_info"
+        android:title="线性列表" />
+    <item
+        android:id="@+id/nav_grid"
+        android:icon="@drawable/ic_success"
+        android:title="双列网格" />
+    <item
+        android:id="@+id/nav_grid3"
+        android:icon="@drawable/ic_warning"
+        android:title="三列网格" />
+</menu>

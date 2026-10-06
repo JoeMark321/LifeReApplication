@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="12dp"
+    android:layout_marginTop="12dp"
+    android:layout_marginEnd="12dp"
+    android:layout_marginBottom="4dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="本周精选 · 横向滑动"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="仅在此区域内响应水平手势，垂直滚动交给外层列表"
+            android:textColor="@color/text_hint"
+            android:textSize="11sp" />
+
+        <!--
+          横向滑动区（严格限制在此小段区域内）：
+          1. 固定高度 108dp、水平方向占满父容器，视觉边界即手势边界；
+          2. 嵌套在垂直 RecyclerView 内：Android 触摸系统按“初始滑动方向”
+             自动裁决父子手势冲突——横向位移大则本视图消费，垂直位移大则
+             交给外层，无需写自定义 onInterceptTouchEvent，天然 60fps；
+          3. clipToPadding=false 让首尾卡片滑出边界时有呼吸感；
+          4. 系统默认 OverScroller 提供 Material 规范的惯性衰减曲线，
+             overscroll 模式为系统 stretch 回弹，无需自绘。
+        -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvBanner"
+            android:layout_width="match_parent"
+            android:layout_height="108dp"
+            android:layout_marginTop="10dp"
+            android:clipToPadding="false"
+            android:orientation="horizontal"
+            android:overScrollMode="always"
+            android:paddingHorizontal="4dp" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

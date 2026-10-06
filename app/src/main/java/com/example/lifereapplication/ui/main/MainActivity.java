@@ -13,6 +13,7 @@ import com.example.lifereapplication.data.model.Problem;
 import com.example.lifereapplication.data.prefs.AppPreferences;
 import com.example.lifereapplication.ui.detail.DetailActivity;
 import com.example.lifereapplication.ui.lifecycle.LifecycleDemoActivity;
+import com.example.lifereapplication.ui.list.ListDemoActivity;
 import com.example.lifereapplication.ui.nav.BaseMenuActivity;
 import com.example.lifereapplication.ui.nav.NavDestination;
 import com.example.lifereapplication.ui.settings.SettingsActivity;
@@ -49,6 +50,8 @@ public class MainActivity extends BaseMenuActivity
         adapter = new ProblemAdapter(this, this);
         recyclerView.setAdapter(adapter);
 
+        setupBanner();
+
         viewModel = new ViewModelProvider(this).get(MainViewModel.class);
         viewModel.getProblems().observe(this, problems -> {
             if (problems == null) {
@@ -62,6 +65,37 @@ public class MainActivity extends BaseMenuActivity
         });
 
         trace("onCreate");
+    }
+
+    /** 首页顶部横向精选区：仅在此小段区域内响应水平手势 */
+    private void setupBanner() {
+        RecyclerView rvBanner = findViewById(R.id.rvBanner);
+        if (rvBanner == null) {
+            return;
+        }
+        rvBanner.setLayoutManager(BannerAdapter.horizontalLayout(this));
+        BannerAdapter bannerAdapter = new BannerAdapter();
+        // tag 携带回调，避免 Adapter 持有 Activity 强引用
+        rvBanner.setTag((BannerAdapter.OnBannerClickListener) problem -> {
+            Intent intent = new Intent(this, DetailActivity.class);
+            intent.putExtra(DetailActivity.EXTRA_PROBLEM_ID, problem.getId());
+            intent.putExtra(DetailActivity.EXTRA_SOURCE_PAGE, "首页横幅");
+            startActivity(intent);
+        });
+        rvBanner.setAdapter(bannerAdapter);
+        // 精选内容 = 标记为 featured 的主题，懒加载自列表数据
+        viewModel.getProblems().observe(this, problems -> {
+            if (problems == null) {
+                return;
+            }
+            List<Problem> featured = new java.util.ArrayList<>();
+            for (Problem p : problems) {
+                if (p.isFeatured()) {
+                    featured.add(p);
+                }
+            }
+            bannerAdapter.submit(featured);
+        });
     }
 
     @Override
@@ -152,13 +186,15 @@ public class MainActivity extends BaseMenuActivity
         return Arrays.asList(
                 new NavDestination(1, "返回本页", MainActivity.class,
                         "当前就在首页，无需重复跳转", CustomToast.Type.WARNING),
-                new NavDestination(2, "生命周期演示", LifecycleDemoActivity.class,
+                new NavDestination(2, "列表演示", ListDemoActivity.class,
+                        "从【首页】跳到【列表演示】—— 体验滚动位置记忆", CustomToast.Type.INFO),
+                new NavDestination(3, "生命周期演示", LifecycleDemoActivity.class,
                         "从【首页】跳到【生命周期演示】—— 实时观察回调顺序", CustomToast.Type.INFO),
-                new NavDestination(3, "提示实验室", ToastLabActivity.class,
+                new NavDestination(4, "提示实验室", ToastLabActivity.class,
                         "从【首页】跳到【提示实验室】—— 对比三种 Toast", CustomToast.Type.INFO),
-                new NavDestination(4, "设置", SettingsActivity.class,
+                new NavDestination(5, "设置", SettingsActivity.class,
                         "从【首页】跳到【设置】—— 管理提示权限与样式", CustomToast.Type.INFO),
-                new NavDestination(5, "关于本项目", null,
+                new NavDestination(6, "关于本项目", null,
                         "LifeReApplication v2.0 · MVVM + Room + LiveData", CustomToast.Type.SUCCESS)
         );
     }
