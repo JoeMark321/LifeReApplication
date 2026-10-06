@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 中心圆球：径向渐变球面 + 左上高光，呈现弧度立体感 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:centerX="0.35"
+                android:centerY="0.3"
+                android:gradientRadius="60dp"
+                android:startColor="#8EACFF"
+                android:centerColor="#3B7BE0"
+                android:endColor="#0D47A1" />
+        </shape>
+    </item>
+    <item
+        android:left="18dp"
+        android:top="12dp"
+        android:right="52dp"
+        android:bottom="58dp">
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:centerX="0.5"
+                android:centerY="0.5"
+                android:gradientRadius="24dp"
+                android:startColor="#CCFFFFFF"
+                android:endColor="#00FFFFFF" />
+        </shape>
+    </item>
+</layer-list>

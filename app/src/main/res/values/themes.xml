@@ -21,6 +21,8 @@
         <item name="android:scrollbarSize">@dimen/scrollbar_size</item>
         <item name="android:scrollbarDefaultDelayBeforeFade">800</item>
         <item name="android:scrollbarFadeDuration">300</item>
+        <!-- 右上角下拉菜单：白色圆角卡片（替换默认灰底），AppCompat popupMenuBackground -->
+        <item name="popupMenuBackground">@drawable/bg_popup_menu</item>
     </style>
 
     <!-- Base application theme（日间） -->

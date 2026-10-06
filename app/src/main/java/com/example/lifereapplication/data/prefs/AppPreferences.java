@@ -22,6 +22,8 @@ public class AppPreferences {
     private static final String KEY_NOTIFY_ENABLED = "notify_enabled";
     private static final String KEY_LIFECYCLE_TRACE_ENABLED = "lifecycle_trace_enabled";
     private static final String KEY_LAST_PAGE = "last_page";
+    private static final String KEY_LAST_CHAPTER = "last_chapter";
+    private static final String KEY_LIST_DEMO_TAB = "list_demo_tab";
 
     private final SharedPreferences sp;
 
@@ -70,6 +72,24 @@ public class AppPreferences {
 
     public void setLastPage(String pageClassName) {
         sp.edit().putString(KEY_LAST_PAGE, pageClassName).apply();
+    }
+
+    /** 章节学习：上次停留的章节页码（ViewPager2 position） */
+    public int getLastChapter() {
+        return sp.getInt(KEY_LAST_CHAPTER, -1);
+    }
+
+    public void setLastChapter(int position) {
+        sp.edit().putInt(KEY_LAST_CHAPTER, position).apply();
+    }
+
+    /** 列表演示：上次选中的布局 tab（tag 字符串） */
+    public String getListDemoTab() {
+        return sp.getString(KEY_LIST_DEMO_TAB, null);
+    }
+
+    public void setListDemoTab(String tag) {
+        sp.edit().putString(KEY_LIST_DEMO_TAB, tag).apply();
     }
 
     public void setEnabled(String key, boolean value) {

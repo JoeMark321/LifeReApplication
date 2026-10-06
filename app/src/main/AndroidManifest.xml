@@ -43,6 +43,10 @@
                 android:label="列表演示"
                 android:configChanges="orientation|screenSize" />
         <activity
+                android:name=".ui.list.ListDemoSecondActivity"
+                android:exported="false"
+                android:label="列表演示二" />
+        <activity
                 android:name=".ui.chapter.ChapterActivity"
                 android:exported="false"
                 android:label="章节学习" />

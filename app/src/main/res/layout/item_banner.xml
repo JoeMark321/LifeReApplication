@@ -22,6 +22,8 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="@drawable/bg_stage_badge"
+            android:duplicateParentState="true"
+            android:foreground="@drawable/bg_icon_feedback"
             android:gravity="center"
             android:text="★"
             android:textColor="@color/white"

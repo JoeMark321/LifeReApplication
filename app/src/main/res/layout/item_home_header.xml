@@ -111,6 +111,9 @@
                     <ImageView
                         android:layout_width="26dp"
                         android:layout_height="26dp"
+                        android:background="@drawable/bg_icon_feedback"
+                        android:duplicateParentState="true"
+                        android:padding="2dp"
                         android:src="@drawable/ic_info"
                         app:tint="@color/brand_primary" />
 
@@ -149,6 +152,9 @@
                     <ImageView
                         android:layout_width="26dp"
                         android:layout_height="26dp"
+                        android:background="@drawable/bg_icon_feedback"
+                        android:duplicateParentState="true"
+                        android:padding="2dp"
                         android:src="@drawable/ic_warning"
                         app:tint="@color/brand_warn" />
 
@@ -187,6 +193,9 @@
                     <ImageView
                         android:layout_width="26dp"
                         android:layout_height="26dp"
+                        android:background="@drawable/bg_icon_feedback"
+                        android:duplicateParentState="true"
+                        android:padding="2dp"
                         android:src="@drawable/ic_success"
                         app:tint="@color/brand_accent" />
 

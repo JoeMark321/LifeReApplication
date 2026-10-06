@@ -6,6 +6,7 @@ import androidx.annotation.Nullable;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.lifereapplication.R;
+import com.example.lifereapplication.data.prefs.AppPreferences;
 import com.example.lifereapplication.ui.lifecycle.LifecycleDemoActivity;
 import com.example.lifereapplication.ui.list.ListDemoActivity;
 import com.example.lifereapplication.ui.main.MainActivity;
@@ -42,23 +43,40 @@ public class ChapterActivity extends BaseMenuActivity {
         TabLayout tabLayout = findViewById(R.id.tabLayout);
 
         ChapterPagerAdapter pagerAdapter = new ChapterPagerAdapter(this);
+        // 章节进度记忆：翻页即记（onPageSelected 持久化），重进时无动画直接定位。
+        // 页内滚动位置由 ListFragment + ScrollStateKeeper 自行恢复（listId=chapter.N）。
+        prefs = new AppPreferences(this);
+
         viewPager.setAdapter(pagerAdapter);
+
+        // 恢复上次章节：在 TabLayoutMediator.attach 之前 setCurrentItem，
+        // 保证 tab 与页面一次性同步到位（避免先显示第 0 章再跳的闪动）。
+        int lastChapter = prefs.getLastChapter();
+        if (lastChapter > 0 && lastChapter < ChapterPagerAdapter.CHAPTERS.size()) {
+            viewPager.setCurrentItem(lastChapter, false);
+            ToastDispatcher.dispatch(this,
+                    "已回到上次学习的位置：第 " + (lastChapter + 1) + " 章",
+                    CustomToast.Type.SUCCESS, false);
+        }
 
         // Mediator 完成 Tab↔Page 双向联动（附自动清除旧 tab 的策略）
         new TabLayoutMediator(tabLayout, viewPager, true,
                 (tab, position) -> tab.setText(pagerAdapter.pageTitle(position))
         ).attach();
 
-        // 翻页时给一句独特提示（走节流队列，连翻不会刷屏）
+        // 翻页时给一句独特提示（走节流队列，连翻不会刷屏），并持久化进度
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
+                prefs.setLastChapter(position);
                 ToastDispatcher.dispatch(ChapterActivity.this,
                         "第 " + (position + 1) + " 章：" + ChapterPagerAdapter.CHAPTERS.get(position).getSubtitle(),
                         CustomToast.Type.INFO, false);
             }
         });
     }
+
+    private AppPreferences prefs;
 
     /** 禁掉用户横向滑动时与列表纵向手势打架： ViewPager2 内部已处理，无需干预 */
 

@@ -9,6 +9,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import com.example.lifereapplication.R;
+import com.example.lifereapplication.data.prefs.AppPreferences;
+import com.example.lifereapplication.ui.chapter.ChapterActivity;
 import com.example.lifereapplication.ui.lifecycle.LifecycleDemoActivity;
 import com.example.lifereapplication.ui.main.MainActivity;
 import com.example.lifereapplication.ui.nav.BaseMenuActivity;
@@ -56,27 +58,38 @@ public class ListDemoActivity extends BaseMenuActivity {
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
+            String tag;
             if (id == R.id.nav_linear) {
-                showPrimary(TAG_LINEAR);
-                showSecondaryIfLand(TAG_GRID2);
-                return true;
+                tag = TAG_LINEAR;
             } else if (id == R.id.nav_grid) {
-                showPrimary(TAG_GRID2);
-                showSecondaryIfLand(TAG_LINEAR);
-                return true;
+                tag = TAG_GRID2;
             } else if (id == R.id.nav_grid3) {
-                showPrimary(TAG_GRID3);
-                showSecondaryIfLand(TAG_GRID2);
-                return true;
+                tag = TAG_GRID3;
+            } else {
+                return false;
             }
-            return false;
+            // tab 记忆：每次选择即持久化，重进自动回到上次布局
+            prefs.setListDemoTab(tag);
+            showPrimary(tag);
+            showSecondaryIfLand(tag.equals(TAG_LINEAR) ? TAG_GRID2 : TAG_LINEAR);
+            return true;
         });
 
-        if (savedInstanceState == null) {
-            showPrimary(TAG_LINEAR);
-            showSecondaryIfLand(TAG_GRID2);
+        prefs = new AppPreferences(this);
+        // 恢复上次选择的 tab（与"章节学习"的页级进度形成对比：tab 级 vs 页+像素级）
+        String lastTag = prefs.getListDemoTab();
+        int restoreId;
+        if (TAG_GRID2.equals(lastTag)) {
+            restoreId = R.id.nav_grid;
+        } else if (TAG_GRID3.equals(lastTag)) {
+            restoreId = R.id.nav_grid3;
+        } else {
+            restoreId = R.id.nav_linear;
         }
+        bottomNav.setSelectedItemId(restoreId); // 触发 listener 完成首次展示与恢复
     }
+
+    private AppPreferences prefs;
 
     /** 主栏切换（竖屏即唯一栏）：span 随屏幕方向自适应 */
     private void showPrimary(String tag) {
@@ -154,14 +167,18 @@ public class ListDemoActivity extends BaseMenuActivity {
         return Arrays.asList(
                 new NavDestination(1, "返回本页", ListDemoActivity.class,
                         "当前就在列表演示页，无需重复跳转", CustomToast.Type.WARNING),
-                new NavDestination(2, "生命周期演示", LifecycleDemoActivity.class,
-                        "从【列表演示】跳到【生命周期演示】—— 看回调时序", CustomToast.Type.INFO),
-                new NavDestination(3, "提示实验室", ToastLabActivity.class,
-                        "从【列表演示】跳到【提示实验室】—— 对比三种 Toast", CustomToast.Type.INFO),
-                new NavDestination(4, "设置", SettingsActivity.class,
-                        "从【列表演示】跳到【设置】—— 管理提示权限", CustomToast.Type.INFO),
-                new NavDestination(5, "回到首页", MainActivity.class,
-                        "从【列表演示】跳到【首页】—— 返回难题清单", CustomToast.Type.SUCCESS)
+                new NavDestination(2, "列表演演二·复述", ListDemoSecondActivity.class,
+                        "从【列表演演】跳到【列表演演二】—— 体验内容复述对比", CustomToast.Type.INFO),
+                new NavDestination(3, "章节学习", ChapterActivity.class,
+                        "从【列表演演】跳到【章节学习】—— 页级进度记忆对比", CustomToast.Type.INFO),
+                new NavDestination(4, "生命周期演示", LifecycleDemoActivity.class,
+                        "从【列表演演】跳到【生命周期演示】—— 看回调时序", CustomToast.Type.INFO),
+                new NavDestination(5, "提示实验室", ToastLabActivity.class,
+                        "从【列表演演】跳到【提示实验室】—— 对比三种 Toast", CustomToast.Type.INFO),
+                new NavDestination(6, "设置", SettingsActivity.class,
+                        "从【列表演演】跳到【设置】—— 管理提示权限", CustomToast.Type.INFO),
+                new NavDestination(7, "回到首页", MainActivity.class,
+                        "从【列表演演】跳到【首页】—— 返回难题清单", CustomToast.Type.SUCCESS)
         );
     }
 }

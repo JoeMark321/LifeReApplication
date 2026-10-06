@@ -25,6 +25,23 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- 中心圆球：品牌色径向渐变弧度外观，点击有弹跳反馈 -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <View
+                    android:id="@+id/viewSphere"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:layout_gravity="center_horizontal"
+                    android:background="@drawable/bg_sphere"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </FrameLayout>
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

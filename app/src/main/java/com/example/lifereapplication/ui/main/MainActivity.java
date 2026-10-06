@@ -15,6 +15,7 @@ import com.example.lifereapplication.ui.detail.DetailActivity;
 import com.example.lifereapplication.ui.chapter.ChapterActivity;
 import com.example.lifereapplication.ui.lifecycle.LifecycleDemoActivity;
 import com.example.lifereapplication.ui.list.ListDemoActivity;
+import com.example.lifereapplication.ui.list.ListDemoSecondActivity;
 import com.example.lifereapplication.ui.nav.BaseMenuActivity;
 import com.example.lifereapplication.ui.nav.NavDestination;
 import com.example.lifereapplication.ui.settings.SettingsActivity;
@@ -181,15 +182,17 @@ public class MainActivity extends BaseMenuActivity
                         "当前就在首页，无需重复跳转", CustomToast.Type.WARNING),
                 new NavDestination(2, "章节学习", ChapterActivity.class,
                         "从【首页】跳到【章节学习】—— ViewPager2 联动 Fragment", CustomToast.Type.INFO),
-                new NavDestination(3, "列表演示", ListDemoActivity.class,
-                        "从【首页】跳到【列表演示】—— 体验滚动位置记忆", CustomToast.Type.INFO),
-                new NavDestination(3, "生命周期演示", LifecycleDemoActivity.class,
+                new NavDestination(3, "列表演演", ListDemoActivity.class,
+                        "从【首页】跳到【列表演演】—— 体验滚动位置记忆", CustomToast.Type.INFO),
+                new NavDestination(4, "列表演演二·复述", ListDemoSecondActivity.class,
+                        "从【首页】跳到【列表演演二】—— 内容复述对比", CustomToast.Type.INFO),
+                new NavDestination(5, "生命周期演示", LifecycleDemoActivity.class,
                         "从【首页】跳到【生命周期演示】—— 实时观察回调顺序", CustomToast.Type.INFO),
-                new NavDestination(4, "提示实验室", ToastLabActivity.class,
+                new NavDestination(6, "提示实验室", ToastLabActivity.class,
                         "从【首页】跳到【提示实验室】—— 对比三种 Toast", CustomToast.Type.INFO),
-                new NavDestination(5, "设置", SettingsActivity.class,
+                new NavDestination(7, "设置", SettingsActivity.class,
                         "从【首页】跳到【设置】—— 管理提示权限与样式", CustomToast.Type.INFO),
-                new NavDestination(6, "关于本项目", null,
+                new NavDestination(8, "关于本项目", null,
                         "上次访问：" + lastPageLabel() + " · LifeReApplication v2.0", CustomToast.Type.SUCCESS)
         );
     }

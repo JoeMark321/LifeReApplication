@@ -229,6 +229,68 @@ viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
 
 ---
 
+## 5A. 进度记忆体系：三种粒度对比（章节学习 / 列表演演 / 列表演演二）
+
+### 5A.1 章节学习（页级 + 页内像素级）
+
+| 环节 | 实现 |
+|---|---|
+| 记忆 | `onPageSelected` → `AppPreferences.setLastChapter(position)` 持久化（翻页即记，退出无需额外动作） |
+| 恢复 | 进入 [ChapterActivity](../app/src/main/java/com/example/lifereapplication/ui/chapter/ChapterActivity.java) 时 `setCurrentItem(lastChapter, false)` **无动画定位**，且在 `TabLayoutMediator.attach()` 之前执行——tab 与页面一次性同步，避免先显示第 0 章再跳的闪动 |
+| 页内位置 | 每章是 `ListFragment(listId=chapter.N)`，纵向滚动位置由 ScrollStateKeeper 双缓存像素级恢复（含 66%/11% 这类"半屏中间状态"——保存的是第一条可见项+像素偏移，不是条目头） |
+| 提示 | 恢复后弹出"已回到上次学习的位置：第 N 章"（走节流队列） |
+
+**用户痛点对应**："退出时内容只显示 66%/11% 区域" → 恢复时不仅回到该章，还带像素偏移精确复位，不会退回条目头部。
+
+### 5A.2 三种记忆粒度对比表
+
+| 维度 | 章节学习 | 列表演演（一期） | 列表演演二（新增） |
+|---|---|---|---|
+| 记忆对象 | ViewPager2 页码 + 页内像素偏移 | 底部导航选中的布局 tab | 列表条目位置 + 条目文本 |
+| 粒度 | **页级 + 像素级** | **tab 级** | **条目级 + 内容级** |
+| 载体 | SharedPreferences(int) | SharedPreferences(String tag) | 内存 LruCache + SP 双缓存 |
+| 恢复表现 | 直接落在第 N 章，tab 同步 | 自动选中上次布局（线性/双列/三列） | 列表精确复位 + 复述卡展示"上次看到第几条/内容/耗时" |
+| 可验证性 | Toast 定位提示 | tab 选中态 | **复述卡量化输出**（位置、px 偏移、恢复耗时 vs 200ms 阈值） |
+| 适用场景 | 阅读类翻页进度 | 偏好类选择记忆 | 长列表"接着看"场景 |
+
+### 5A.3 列表演演二 · 内容复述（新增页面）
+
+[ListDemoSecondActivity](../app/src/main/java/com/example/lifereapplication/ui/list/ListDemoSecondActivity.java)：进入时读取 `ScrollStateKeeper.restore("demo.second")`，在列表上方渲染复述卡：
+
+```
+上次看到：第 34 条（偏移 87px）
+内容复述：条目 #034 —— 滑动后退出再进入，会精确回到当前位置
+恢复耗时：3 ms（阈值 200ms）
+```
+
+首次进入则提示"暂无历史进度，先滑动再退出试试"。复述把状态记忆从"体感"变成"可验收的数据"。
+
+---
+
+## 5B. 界面组件改进记录
+
+### 5B.1 下拉菜单白色圆角卡片
+
+主题新增 `popupMenuBackground=@drawable/bg_popup_menu`（白底 + radius_md 圆角 + divider 描边），所有页面的右上角 ⋮ 菜单从系统灰底统一为卡片式白底。注意：`popupMenuBackground` 是 **AppCompat 属性**（framework 无 `android:popupMenuBackground`），必须写在 AppCompat 主题里。
+
+### 5B.2 图标按压/选中反馈（仅图标区域）
+
+[bg_icon_feedback.xml](../app/src/main/res/drawable/bg_icon_feedback.xml) 状态选择器：
+
+| 状态 | 视觉 |
+|---|---|
+| 按下（pressed） | 淡品牌色圆底浮现 `#221565C0` |
+| 选中（selected） | 深品牌色圆底保留 `#331565C0` |
+| 抬起（默认） | 透明 |
+
+接入方式：图标 `android:background="@drawable/bg_icon_feedback"` + **`android:duplicateParentState="true"`**——点击仍由父卡片处理，图标只复刻父级按压态，实现"仅图标区域有反馈、不新增点击热点"。已应用：首页三张快捷卡图标、横幅序号徽标。
+
+### 5B.3 设置页中心圆球
+
+[bg_sphere.xml](../app/src/main/res/drawable/bg_sphere.xml)：双层 layer-list——底层径向渐变球面（`centerX=0.35/centerY=0.3` 模拟左上光源，`#8EACFF→#3B7BE0→#0D47A1`），上层径向渐变高光椭圆，形成弧度立体感。点击有 scale 1.15→1.0 弹跳 + 成功 Toast。
+
+---
+
 ## 6. 测试与验收
 
 **构建**：`BUILD SUCCESSFUL`（assembleDebug + testDebugUnitTest）

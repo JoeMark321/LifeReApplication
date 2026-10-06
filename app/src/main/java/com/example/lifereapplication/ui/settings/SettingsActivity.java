@@ -1,6 +1,7 @@
 package com.example.lifereapplication.ui.settings;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.Toast;
@@ -53,6 +54,15 @@ public class SettingsActivity extends BaseMenuActivity {
         switchDialog.setChecked(prefs.isDialogEnabled());
         switchNotify.setChecked(prefs.isNotifyEnabled());
         switchTrace.setChecked(prefs.isLifecycleTraceEnabled());
+
+        // 中心圆球：点击弹跳 + 轻提示（弧度外观见 bg_sphere.xml）
+        View sphere = findViewById(R.id.viewSphere);
+        sphere.setOnClickListener(v -> {
+            v.animate().scaleX(1.15f).scaleY(1.15f).setDuration(120)
+                    .withEndAction(() -> v.animate().scaleX(1f).scaleY(1f).setDuration(160).start())
+                    .start();
+            tip("圆球反馈：设置已就绪", CustomToast.Type.SUCCESS);
+        });
 
         switch (prefs.getToastStyle()) {
             case "NATIVE":
