@@ -2,12 +2,16 @@ package com.example.lifereapplication.ui.main;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.lifereapplication.R;
+import com.example.lifereapplication.SplashGate;
 import com.example.lifereapplication.data.memory.LifecycleEventLog;
 import com.example.lifereapplication.data.model.Problem;
 import com.example.lifereapplication.data.prefs.AppPreferences;

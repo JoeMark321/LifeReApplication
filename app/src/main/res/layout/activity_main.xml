@@ -1,4 +1,4 @@
-﻿﻿﻿﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- 顶层 FrameLayout：承载全屏开屏遮罩（仅冷启动展示，2s 后淡出） -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
