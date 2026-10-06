@@ -38,11 +38,23 @@ public class ProblemRepository {
 
     private final AppDatabase database;
     private final LruCache<Integer, Problem> detailCache;
+    /**
+     * 单线程 IO 执行器。为什么单线程而不是线程池：数据库写保持先进先出顺序，
+     * 天然规避并发写造成的竞态；本仓库写频率极低（仅首次播种一次），单线程
+     * 吞吐完全够用，还省去线程竞争开销。
+     */
     private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
 
+    // volatile：写在 IO 线程、读可能发生在主线程，volatile 保证引用替换后
+    // 其他线程立即可见（整体替换引用而非原地改，无需加锁）
     private volatile List<Problem> allProblemsCache;
     private volatile List<String> categoryCache;
 
+    /**
+     * 为什么取单例数据库：全局唯一连接，与本仓库"唯一数据入口"的定位一致。
+     * detailCache 用匿名子类重写 sizeOf：LruCache 默认按条数计重，不重写的话
+     * "4MB 字节上限"就没有实际语义。
+     */
     public ProblemRepository(Context context) {
         this.database = AppDatabase.getInstance(context);
         this.detailCache = new LruCache<Integer, Problem>(DETAIL_CACHE_SIZE) {
@@ -56,11 +68,13 @@ public class ProblemRepository {
 
     /** 全量主题：内存缓存 → 数据库，都不命中则写入初始数据 */
     public List<Problem> getProblems() {
+        // 命中缓存直接返回：首页反复进出时避免每次全表查询 + 对象转换
         if (allProblemsCache != null) {
             return allProblemsCache;
         }
         List<Problem> fromDb = queryAll();
         if (fromDb == null || fromDb.isEmpty()) {
+            // 空库 = 首次安装：播种后必须重查一次，保证本次调用就拿到数据而非空列表
             seedDatabaseIfNeeded();
             fromDb = queryAll();
         }
@@ -79,6 +93,7 @@ public class ProblemRepository {
             return null;
         }
         Problem problem = toDomain(entity);
+        // 回填缓存：详情页"退出再进"是高频路径，第二次起直接命中内存
         detailCache.put(problem.getId(), problem);
         return problem;
     }
@@ -91,6 +106,11 @@ public class ProblemRepository {
         return categoryCache;
     }
 
+    /**
+     * 后台预热全量列表（含首次播种）。
+     * 为什么必须异步：Room 未开主线程查询，首页启动时的首次加载只能走子线程；
+     * 预热完成后列表/分类缓存就绪，后续同步调用 getProblems() 直接命中内存。
+     */
     public void prefetchAsync(final Callback callback) {
         ioExecutor.execute(() -> {
             List<Problem> list = getProblems();
@@ -110,6 +130,7 @@ public class ProblemRepository {
         });
     }
 
+    /** 单个详情加载完成回调（在 IO 线程触发，更新 UI 需自行切回主线程） */
     public interface DetailCallback {
         void onLoaded(Problem problem);
     }
@@ -121,6 +142,7 @@ public class ProblemRepository {
         detailCache.evictAll();
     }
 
+    /** DB 全量读取 + 实体转领域模型；转换集中一处，实体字段变化只需改这里 */
     private List<Problem> queryAll() {
         List<ProblemEntity> entities = database.problemDao().getAll();
         List<Problem> result = new ArrayList<>(entities.size());
@@ -130,14 +152,21 @@ public class ProblemRepository {
         return result;
     }
 
+    /**
+     * 首次安装时把内置教学内容写入数据库。
+     * 为什么先 count 再插：保证幂等——已播种就不再插，否则每次冷启动都会重复写入；
+     * 为什么种子数据硬编码：内容是静态教学材料，没有网络来源，代码即数据最简单可靠。
+     */
     private void seedDatabaseIfNeeded() {
         if (database.problemDao().count() > 0) {
             return;
         }
         database.problemDao().insertAll(buildSeedData());
+        // 播种改变了库内容，内存缓存必须失效，否则本次进程内一直读到空列表
         invalidateCache();
     }
 
+    /** 实体 → 领域模型：隔离 Room 类型，保证领域层不依赖任何框架 */
     private Problem toDomain(ProblemEntity entity) {
         return new Problem(
                 entity.id,
@@ -151,6 +180,7 @@ public class ProblemRepository {
         );
     }
 
+    /** 内置教学内容（种子数据）：id 固定，便于详情页按 id 精确跳转 */
     private static List<ProblemEntity> buildSeedData() {
         List<ProblemEntity> list = new ArrayList<>();
         list.add(entity(1, "Activity 完整生命周期", "七个核心回调方法的调用顺序与各自职责", "入门",
@@ -247,6 +277,7 @@ public class ProblemRepository {
         return e;
     }
 
+    /** 全量列表加载完成回调（在 IO 线程触发，更新 UI 需自行切回主线程） */
     public interface Callback {
         void onLoaded(List<Problem> problems);
     }

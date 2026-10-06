@@ -38,13 +38,29 @@ import java.util.List;
  *
  * <p>状态隔离：listId 前缀 {@code third.*}、tab 记忆独立 key {@code list_tab.third}；
  * 页内滚动位置由 ListFragment 自行保存/恢复（MODE_EXACT 精确恢复）。</p>
+ *
+ * <p><b>三个列表演演的刻意差异（教学对比）：</b>本页是<b>表演三</b>——
+ * 导航形态从"点 tab 切换"升级为"横滑切页 + 自定义 tab 双向联动"；
+ * 恢复策略与表演一同为 {@code MODE_EXACT}，表演二则是条目头对齐。
+ * 三页共用 ListFragment，差异全部集中在恢复模式与导航形态上。</p>
+ *
+ * <p><b>为什么做成双向绑定：</b>手势滑动和 tab 点击是两条独立的事件源，
+ * 用户既能滑也能点，任何一条路径引起页面变化都必须同步回另一条，
+ * 否则 tab 状态和真实页面会脱节。实现上只认一个汇聚点：
+ * {@code onPageSelected} 是两条路径的必经出口（手势滑动落定、
+ * setCurrentItem 翻页都会回调它），在这里统一点亮 tab + 持久化进度；
+ * tab 的 onClick 只负责反向驱动 {@code setCurrentItem}，
+ * 两条路径各自单向推进，不会互相递归触发。</p>
  */
 public class ListDemoThirdActivity extends BaseMenuActivity {
 
+    // 三个数组按下标一一对齐：createFragment 直接 [position] 取值，免 switch。
+    // LIST_IDS 与 TAGS 取值相同但语义不同：前者是每页的滚动状态隔离 key（"这页是谁"），
+    // 后者是 tab 记忆的存储值（"这页被选中的记号"，恢复时反查页码）
     private static final String PREF_KEY = "third";
     private static final String[] LIST_IDS = {"third.linear", "third.grid2", "third.grid3"};
     private static final String[] TAGS = {"third.linear", "third.grid2", "third.grid3"};
-    private static final int[] SPANS = {1, 0, 0}; // 0 = 网格列数按屏宽自适应
+    private static final int[] SPANS = {1, 0, 0}; // 0 = 网格列数按屏宽自适应（1 = 固定单列线性）
 
     private AppPreferences prefs;
     private ViewPager2 viewPager;
@@ -52,7 +68,14 @@ public class ListDemoThirdActivity extends BaseMenuActivity {
     private TextView tabGrid;
     private TextView tabGrid3;
 
-    /** 三页适配器：复用 ListFragment，listId 各自独立（状态互不串扰） */
+    /**
+     * 三页适配器：复用 ListFragment，listId 各自独立（状态互不串扰）。
+     *
+     * <p>为什么显式重写 getItemId 固定返回 position：FragmentStateAdapter
+     * 按 itemId 复用 Fragment，默认实现依赖"位置稳定"的隐式假设，数据集
+     * 一旦增删就会错位复用；本页数据固定不变，显式固定 itemId 并配套
+     * containsItem，把假设变成契约，防止刷新时 Fragment 错位。</p>
+     */
     private class ThirdPagerAdapter extends FragmentStateAdapter {
 
         ThirdPagerAdapter(@NonNull FragmentActivity activity) {
@@ -62,6 +85,8 @@ public class ListDemoThirdActivity extends BaseMenuActivity {
         @NonNull
         @Override
         public Fragment createFragment(int position) {
+            // 每次都返回全新实例：复用/销毁由 FragmentStateAdapter 按 itemId 在内部管理，
+            // 在这里返回缓存实例会与其内部映射表冲突
             return ListFragment.newInstance(LIST_IDS[position], SPANS[position]);
         }
 
@@ -95,7 +120,10 @@ public class ListDemoThirdActivity extends BaseMenuActivity {
         viewPager = findViewById(R.id.viewPager);
         viewPager.setAdapter(new ThirdPagerAdapter(this));
 
-        // 页面变化 → tab 点亮 + 持久化进度（手势滑动与点 tab 都会走这里）
+        // 页面变化 → tab 点亮 + 持久化进度。
+        // 为什么同步逻辑只挂 onPageSelected：它是两条事件源的汇聚出口——
+        // 手势滑动落定、setCurrentItem 翻页最终都会回调到这里，
+        // 在这里统一点亮 tab + 持久化，任何路径引起的页面变化都不会漏同步
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
@@ -104,18 +132,26 @@ public class ListDemoThirdActivity extends BaseMenuActivity {
             }
         });
 
-        // tab 点击 → 页面平滑翻过去（双向联动的另一半）
+        // tab 点击 → 页面平滑翻过去（双向联动的另一半）。
+        // 点击是用户的主动意图，带 smoothScroll 动画符合预期；
+        // 与下面冷启动恢复的 setCurrentItem(x, false) 刻意相反
         tabLinear.setOnClickListener(v -> viewPager.setCurrentItem(0, true));
         tabGrid.setOnClickListener(v -> viewPager.setCurrentItem(1, true));
         tabGrid3.setOnClickListener(v -> viewPager.setCurrentItem(2, true));
 
-        // 恢复上次停留的页（独立 key，与演示一互不影响）
+        // 恢复上次停留的页（独立 key，与演示一互不影响）。
+        // 为什么 setCurrentItem(lastIndex, false) 不带动画：冷进入应直接
+        // 落在上次的页，带动画反而把"切页过程"暴露给用户
         String lastTag = prefs.getListTab(PREF_KEY);
         int lastIndex = TAGS[1].equals(lastTag) ? 1 : TAGS[2].equals(lastTag) ? 2 : 0;
         viewPager.setCurrentItem(lastIndex, false);
     }
 
-    /** tab 点亮状态：selected 驱动 selector（胶囊背景 + 文字色） */
+    /**
+     * tab 点亮状态：selected 驱动 selector（胶囊背景 + 文字色）。
+     * 为什么只 setSelected 不手动改样式：背景与文字色都声明在
+     * selector state-list 里，selected 一变全部自动生效，样式零 Java 代码。
+     */
     private void updateTabStates(int position) {
         tabLinear.setSelected(position == 0);
         tabGrid.setSelected(position == 1);

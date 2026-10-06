@@ -24,17 +24,27 @@ import com.example.lifereapplication.data.local.entity.ProblemEntity;
 @Database(entities = {ProblemEntity.class}, version = 1, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
+    /** 固定文件名：每次启动都打开同一个库文件，数据才能跨启动保留 */
     private static final String DB_NAME = "lifere.db";
 
+    // volatile：配合下方双重检查锁，防止"new 实例"未完全初始化就被其他线程读到
     private static volatile AppDatabase instance;
 
+    /** DAO 入口：Room 在编译期生成实现，业务侧通过该方法取 DAO，而不是自己构造 */
     public abstract ProblemDao problemDao();
 
+    /**
+     * 双重检查锁单例。为什么要两层判空：第一层让热路径（实例已存在）无锁直接
+     * 返回，避免每次调用都付同步开销；第二层防止两个线程同时通过第一层后重复
+     * 建库——只有抢到锁的第一个线程真正创建，后来的进锁后发现已有实例直接复用。
+     */
     public static AppDatabase getInstance(Context context) {
         if (instance == null) {
             synchronized (AppDatabase.class) {
                 if (instance == null) {
                     instance = Room.databaseBuilder(
+                                    // 用 ApplicationContext：数据库与进程同生命周期，
+                                    // 绑 Activity 上下文会让库实例持有页面引用造成泄漏
                                     context.getApplicationContext(),
                                     AppDatabase.class,
                                     DB_NAME)

@@ -35,11 +35,18 @@ import java.util.List;
  */
 public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerHolder> {
 
+    /** 当前横幅数据：条目个位数，任何刷新策略的成本都可忽略 */
     private final List<Problem> items = new ArrayList<>();
 
+    /** 无外部依赖的纯展示适配器：数据经 {@link #submit} 注入，构造无需参数 */
     public BannerAdapter() {
     }
 
+    /**
+     * 整表替换横幅数据。
+     * 为什么用 notifyDataSetChanged 而非 DiffUtil：条目只有几个，一次全量重绑
+     * 的开销远低于维护差分计算的复杂度，简单方案就是最优方案。
+     */
     public void submit(List<Problem> featured) {
         items.clear();
         if (featured != null) {
@@ -48,6 +55,11 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerHold
         notifyDataSetChanged();
     }
 
+    /**
+     * 创建横幅 Holder。
+     * 为什么 inflate 传 (parent, false)：借用父容器生成正确的 LayoutParams，
+     * 挂接时机交给 RecyclerView——提前挂上会被测量两次。
+     */
     @NonNull
     @Override
     public BannerHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -56,6 +68,10 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerHold
         return new BannerHolder(view);
     }
 
+    /**
+     * 绑定一条横幅。为什么每次 bind 都重设点击监听：ViewHolder 是复用的，
+     * 不重绑会把上一位置的数据引用带进新位置（串数据事故）。
+     */
     @Override
     public void onBindViewHolder(@NonNull BannerHolder holder, int position) {
         Problem problem = items.get(position);
@@ -70,12 +86,18 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerHold
         });
     }
 
+    /** @return 横幅条数 */
     @Override
     public int getItemCount() {
         return items.size();
     }
 
-    /** 水平滑动的入口工具：横向 LinearLayoutManager + 默认 MD 物理惯性 */
+    /**
+     * 水平滑动的入口工具：横向 LinearLayoutManager + 默认 MD 物理惯性。
+     * 为什么做成静态工具：LayoutManager 的正确配置与本 adapter 强相关，
+     * 收在一起保证任何宿主（如 HeaderHolder）创建横幅时配置一致；
+     * setItemPrefetchEnabled 让滑动间隙预绑定相邻卡片，横滑首帧更顺。
+     */
     public static LinearLayoutManager horizontalLayout(android.content.Context context) {
         LinearLayoutManager lm = new LinearLayoutManager(context,
                 LinearLayoutManager.HORIZONTAL, false);
@@ -83,6 +105,7 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerHold
         return lm;
     }
 
+    /** 横幅卡片 Holder：View 引用构造时缓存，bind 阶段零 findViewById */
     static class BannerHolder extends RecyclerView.ViewHolder {
         final TextView icon;
         final TextView title;
@@ -94,6 +117,7 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerHold
         }
     }
 
+    /** 横幅点击回调：跳转是页面职责，adapter 只上报数据、不感知具体页面 */
     public interface OnBannerClickListener {
         void onBannerClick(Problem problem);
     }

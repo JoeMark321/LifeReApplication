@@ -44,6 +44,7 @@ public class ChapterPagerAdapter extends FragmentStateAdapter {
     };
     private static final int[] SPANS = {1, 0, 0, 1};
 
+    /** 必须传 FragmentActivity：FragmentStateAdapter 靠它拿 FragmentManager 与生命周期作用域来托管各章 Fragment */
     public ChapterPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
         super(fragmentActivity);
     }
@@ -60,7 +61,11 @@ public class ChapterPagerAdapter extends FragmentStateAdapter {
         return CHAPTERS.size();
     }
 
-    /** 供 TabLayout 联动取标题 */
+    /**
+     * 供 TabLayout 联动取标题。
+     * 为什么 split(" · ")[0]：完整标题形如"第一章 · 线性列表"，
+     * tab 上只展示"第一章"短前缀，宽度与层级更清爽。
+     */
     public String pageTitle(int position) {
         return CHAPTERS.get(position).getTitle().split(" · ")[0];
     }
@@ -72,6 +77,8 @@ public class ChapterPagerAdapter extends FragmentStateAdapter {
 
     @Override
     public boolean containsItem(long itemId) {
+        // 与 getItemId 固定为 position 配套：父类恢复时靠它判断哪些 itemId 仍有效，
+        // 防止把已不存在的条目当有效 Fragment 复用
         return itemId >= 0 && itemId < CHAPTERS.size();
     }
 }

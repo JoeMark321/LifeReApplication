@@ -21,8 +21,10 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
  */
 public final class ToastDispatcher {
 
+    /** 静态单例节流器：节流状态必须跨页面共享，否则换一页就重新计数，「最多三次」的规则形同虚设 */
     private static final ToastThrottle THROTTLE = new ToastThrottle();
 
+    /** 纯静态入口，禁止实例化 */
     private ToastDispatcher() {
     }
 
@@ -34,6 +36,7 @@ public final class ToastDispatcher {
      */
     public static ToastThrottle.Result dispatch(AppCompatActivity activity, String message,
                                                 CustomToast.Type type, boolean longDuration) {
+        // 第一步永远是节流裁决：把明显是连点的请求挡在队列之外，避免队列被无意义消息灌满
         ToastThrottle.Result result = THROTTLE.record(System.currentTimeMillis());
 
         switch (result) {
@@ -43,16 +46,22 @@ public final class ToastDispatcher {
                 ToastQueue.get().enqueue(message, type, longDuration);
                 return result;
             case SUPPRESSED:
-                // 窗口内重复点击：完全静默
+                // 窗口内重复点击：完全静默——连第二条都嫌多，更不该给任何反馈打扰用户
                 return result;
             case OVER_LIMIT:
             default:
-                // 超过三次：模态引导去设置
+                // 超过三次：不再入队 Toast（用户已经嫌烦，再弹 Toast 只会火上浇油），
+                // 改用模态对话框给出「去设置关闭」的操作出口
                 offerSettings(activity);
                 return result;
         }
     }
 
+    /**
+     * 弹出「去设置」的引导对话框。
+     * 为什么用模态对话框：用户反感的正是 Toast 这种轻提示，此时只有模态
+     * 才能真正打断并把用户带到可操作的出口，把「嫌烦」信号变成关闭入口。
+     */
     private static void offerSettings(AppCompatActivity activity) {
         AppPreferences prefs = new AppPreferences(activity);
         if (!prefs.isDialogEnabled()) {
@@ -67,7 +76,7 @@ public final class ToastDispatcher {
                 .show();
     }
 
-    /** 供测试重置节流窗口 */
+    /** 供测试重置节流窗口：避免用例间共享静态 THROTTLE 状态导致互相污染 */
     public static void resetThrottle() {
         THROTTLE.reset();
     }

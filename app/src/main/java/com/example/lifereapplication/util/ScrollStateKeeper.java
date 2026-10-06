@@ -28,11 +28,14 @@ import android.util.LruCache;
  */
 public final class ScrollStateKeeper {
 
+    /** SP 文件名：滚动状态单独一个文件，与业务偏好数据隔离，清理时互不影响 */
     private static final String SP_FILE = "scroll_states";
+    /** 内存缓存上限 16 个列表：一个学习应用同时存在的列表页远少于此，够用且内存可忽略（类注释的 3KB 估算基于此值） */
     private static final int MAX_MEMORY_ENTRIES = 16;
 
     private static final LruCache<String, int[]> MEMORY = new LruCache<>(MAX_MEMORY_ENTRIES);
 
+    /** 纯静态工具类：状态全在静态缓存里，实例化没有意义，禁止 new */
     private ScrollStateKeeper() {
     }
 
@@ -46,9 +49,13 @@ public final class ScrollStateKeeper {
      */
     public static void save(Context context, String listId, int position, int offset) {
         if (listId == null || position < 0) {
+            // listId 缺失无法定位列表；负 position 只来自"列表为空"等异常态，没有保存价值
             return;
         }
+        // 先更新内存：restore 是内存优先，若只写 SP 不同步内存，恢复端会读到旧值
         MEMORY.put(listId, new int[]{position, offset});
+        // 再异步落盘。为什么 apply 不用 commit：save 发生在 onPause，主线程要求轻量，
+        // 同步写盘会阻塞交互；apply 内存即时生效、磁盘异步写
         sp(context).edit()
                 .putInt(keyPosition(listId), position)
                 .putInt(keyOffset(listId), offset)
@@ -64,15 +71,19 @@ public final class ScrollStateKeeper {
         if (listId == null) {
             return null;
         }
+        // 第一层：内存命中直接返回，零 IO（进程存活时绝大多数走这条快路径）
         int[] cached = MEMORY.get(listId);
         if (cached != null) {
             return cached;
         }
+        // 第二层：落盘兜底。先用 contains 区分"从未保存过"与"保存过但值为 0"，
+        // 避免把没存过的列表错误恢复到 (0,0)
         SharedPreferences sp = sp(context);
         if (!sp.contains(keyPosition(listId))) {
             return null;
         }
         int[] state = {sp.getInt(keyPosition(listId), 0), sp.getInt(keyOffset(listId), 0)};
+        // 落盘值回填内存：之后同一列表再恢复就走零 IO 路径（进程被杀重建后的首次恢复属于这种情况）
         MEMORY.put(listId, state);
         return state;
     }
@@ -113,15 +124,18 @@ public final class ScrollStateKeeper {
                 .apply();
     }
 
+    /** 取 SP：始终用 ApplicationContext——SP 是进程级共享的，缓存 Activity 上下文引用会泄漏 */
     private static SharedPreferences sp(Context context) {
         return context.getApplicationContext()
                 .getSharedPreferences(SP_FILE, Context.MODE_PRIVATE);
     }
 
+    /** 位置 key 加 listId 前缀：多个列表共用一个 SP 文件，靠前缀隔离键名避免互相覆盖 */
     private static String keyPosition(String listId) {
         return listId + ".pos";
     }
 
+    /** 偏移 key 同上（与位置 key 各自独立，恢复时缺任何一个都视为无效记录） */
     private static String keyOffset(String listId) {
         return listId + ".offset";
     }
