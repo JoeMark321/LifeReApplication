@@ -3,9 +3,12 @@ package com.example.lifereapplication.ui.list;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentActivity;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.lifereapplication.R;
 import com.example.lifereapplication.data.prefs.AppPreferences;
@@ -22,29 +25,61 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 列表演演三 · 自定义底部导航。
+ * 列表演演三 · 自定义底部导航 + 横滑切页。
  *
- * <p>结构复用演示一（三 tab 列表 + 精确恢复 MODE_EXACT + tab 记忆），
- * 差异在<b>底部 tab 行全自定义</b>（不依赖 BottomNavigationView）：</p>
+ * <p>内容区为 {@link ViewPager2} 承载三个列表 Fragment：</p>
  * <ul>
- *     <li>悬浮白底圆角条（12dp 边距 + 20dp 圆角 + 描边 + elevation）；</li>
- *     <li>三个纯文字 tab（无图标干扰）：选中 = 品牌蓝胶囊 + 白字，未选 = 透明 + 灰字；</li>
- *     <li>状态由 {@code android:selected} 驱动，背景/文字全部走 selector。</li>
+ *     <li><b>左右手势滑动</b>即可在线性 ⇄ 双列 ⇄ 三列间切换；</li>
+ *     <li>底部自定义 tab 行与页面<b>双向联动</b>：滑动时 tab 跟随点亮，
+ *     点 tab 时页面平滑翻过去；</li>
+ *     <li>tab 行全自定义（悬浮白底圆角条 + 纯文字 tab，
+ *     选中 = 品牌蓝胶囊 + 白字，未选 = 透明 + 灰字）。</li>
  * </ul>
  *
- * <p>状态隔离：listId 前缀 {@code third.*}、tab 记忆独立 key {@code list_tab.third}。</p>
+ * <p>状态隔离：listId 前缀 {@code third.*}、tab 记忆独立 key {@code list_tab.third}；
+ * 页内滚动位置由 ListFragment 自行保存/恢复（MODE_EXACT 精确恢复）。</p>
  */
 public class ListDemoThirdActivity extends BaseMenuActivity {
 
     private static final String PREF_KEY = "third";
-    private static final String TAG_LINEAR = "third.linear";
-    private static final String TAG_GRID2 = "third.grid2";
-    private static final String TAG_GRID3 = "third.grid3";
+    private static final String[] LIST_IDS = {"third.linear", "third.grid2", "third.grid3"};
+    private static final String[] TAGS = {"third.linear", "third.grid2", "third.grid3"};
+    private static final int[] SPANS = {1, 0, 0}; // 0 = 网格列数按屏宽自适应
 
     private AppPreferences prefs;
+    private ViewPager2 viewPager;
     private TextView tabLinear;
     private TextView tabGrid;
     private TextView tabGrid3;
+
+    /** 三页适配器：复用 ListFragment，listId 各自独立（状态互不串扰） */
+    private class ThirdPagerAdapter extends FragmentStateAdapter {
+
+        ThirdPagerAdapter(@NonNull FragmentActivity activity) {
+            super(activity);
+        }
+
+        @NonNull
+        @Override
+        public Fragment createFragment(int position) {
+            return ListFragment.newInstance(LIST_IDS[position], SPANS[position]);
+        }
+
+        @Override
+        public int getItemCount() {
+            return LIST_IDS.length;
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public boolean containsItem(long itemId) {
+            return itemId >= 0 && itemId < LIST_IDS.length;
+        }
+    }
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -57,51 +92,34 @@ public class ListDemoThirdActivity extends BaseMenuActivity {
         tabGrid = findViewById(R.id.tabGrid);
         tabGrid3 = findViewById(R.id.tabGrid3);
 
-        tabLinear.setOnClickListener(v -> selectTab(TAG_LINEAR));
-        tabGrid.setOnClickListener(v -> selectTab(TAG_GRID2));
-        tabGrid3.setOnClickListener(v -> selectTab(TAG_GRID3));
+        viewPager = findViewById(R.id.viewPager);
+        viewPager.setAdapter(new ThirdPagerAdapter(this));
 
-        // 恢复上次选中的 tab（独立 key，与演示一互不影响）
-        String lastTag = prefs.getListTab(PREF_KEY);
-        selectTab(TAG_GRID2.equals(lastTag) ? TAG_GRID2
-                : TAG_GRID3.equals(lastTag) ? TAG_GRID3 : TAG_LINEAR);
-    }
-
-    /** 切换 tab：selected 状态驱动 selector（胶囊背景+文字色），Fragment 走 hide/show */
-    private void selectTab(String tag) {
-        prefs.setListTab(PREF_KEY, tag);
-        tabLinear.setSelected(TAG_LINEAR.equals(tag));
-        tabGrid.setSelected(TAG_GRID2.equals(tag));
-        tabGrid3.setSelected(TAG_GRID3.equals(tag));
-        showPrimary(tag);
-    }
-
-    /** 主栏切换：hide/show 保视图，listId 前缀 third.* 状态独立 */
-    private void showPrimary(String tag) {
-        FragmentManager fm = getSupportFragmentManager();
-        Fragment existing = fm.findFragmentByTag(tag);
-        if (existing != null) {
-            hideAll(fm);
-            existing.getView().setVisibility(android.view.View.VISIBLE);
-            return;
-        }
-        hideAll(fm);
-        fm.beginTransaction()
-                .add(R.id.containerList, ListFragment.newInstance(tag, gridSpan(tag)), tag)
-                .commit();
-    }
-
-    private void hideAll(FragmentManager fm) {
-        for (Fragment f : fm.getFragments()) {
-            if (f.getView() != null) {
-                f.getView().setVisibility(android.view.View.GONE);
+        // 页面变化 → tab 点亮 + 持久化进度（手势滑动与点 tab 都会走这里）
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                prefs.setListTab(PREF_KEY, TAGS[position]);
+                updateTabStates(position);
             }
-        }
+        });
+
+        // tab 点击 → 页面平滑翻过去（双向联动的另一半）
+        tabLinear.setOnClickListener(v -> viewPager.setCurrentItem(0, true));
+        tabGrid.setOnClickListener(v -> viewPager.setCurrentItem(1, true));
+        tabGrid3.setOnClickListener(v -> viewPager.setCurrentItem(2, true));
+
+        // 恢复上次停留的页（独立 key，与演示一互不影响）
+        String lastTag = prefs.getListTab(PREF_KEY);
+        int lastIndex = TAGS[1].equals(lastTag) ? 1 : TAGS[2].equals(lastTag) ? 2 : 0;
+        viewPager.setCurrentItem(lastIndex, false);
     }
 
-    /** span：线性=1；网格=0 自适应（最小列宽 170dp） */
-    private int gridSpan(String tag) {
-        return TAG_LINEAR.equals(tag) ? 1 : 0;
+    /** tab 点亮状态：selected 驱动 selector（胶囊背景 + 文字色） */
+    private void updateTabStates(int position) {
+        tabLinear.setSelected(position == 0);
+        tabGrid.setSelected(position == 1);
+        tabGrid3.setSelected(position == 2);
     }
 
     // ---------- 下拉菜单 ----------

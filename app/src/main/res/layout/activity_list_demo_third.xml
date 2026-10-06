@@ -15,8 +15,12 @@
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         android:popupTheme="@style/ThemeOverlay.LifeRe.Popup" />
 
-    <FrameLayout
-        android:id="@+id/containerList"
+    <!--
+      内容区：ViewPager2 承载三个列表 Fragment，
+      支持左右手势滑动切页（线性 ⇄ 双列 ⇄ 三列），与底部 tab 双向联动。
+    -->
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
