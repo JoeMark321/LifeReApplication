@@ -296,6 +296,13 @@ viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
 > 踩坑两条：① BottomNavigationView 自定义指示器与默认图标组合观感差且难控（首次实现被否），改为全自定义 tab 行；② style 名带点（`Third.NavIndicator`）会被 AAPT 解析为隐式父样式导致链接失败。
 > 状态隔离：listId 前缀 `third.*`、tab 记忆独立 key `list_tab.third`（AppPreferences 通用 `getListTab/setListTab(pageKey, tag)`）。
 
+**v3 升级 · 内容区横滑切页**：内容区从 FrameLayout 切换改为 `ViewPager2` + `FragmentStateAdapter` 承载三个 ListFragment（`third.linear`/`third.grid2`/`third.grid3`）：
+
+- **左右手势滑动**直接在线性 ⇄ 双列 ⇄ 三列间翻页；`SPANS = {1, 0, 0}`（0 = 网格按 170dp 最小列宽自适应列数）；
+- **双向联动**：`OnPageChangeCallback.onPageSelected` → tab 点亮 + 持久化进度；点 tab → `setCurrentItem(index, true)` 平滑翻页；
+- 固定 `getItemId(position)=position` + `containsItem` 防 Fragment 复用错位；
+- 每个 Fragment 的滚动位置仍由 `ScrollStateKeeper` 按 listId 独立记忆——横滑翻走再翻回来，精确恢复不丢位。
+
 ### 5A.4.1 能否全局设置状态保持？
 
 可以，且分两种层级：
