@@ -45,19 +45,38 @@ public class ListFragment extends Fragment {
 
     private static final String ARG_LIST_ID = "arg_list_id";
     private static final String ARG_SPAN = "arg_span";
+    private static final String ARG_RESTORE_MODE = "arg_restore_mode";
     private static final int ROW_COUNT = 100;
+
+    /**
+     * 恢复模式（演示一 / 演示二的刻意差异）：
+     * <ul>
+     *     <li>{@link #MODE_EXACT}：像素级精确恢复——保留负偏移，条目半截就恢复半截；
+     *     首帧即定位（无先画顶部再跳转的抖动）；</li>
+     *     <li>{@link #MODE_ITEM_HEAD}：条目头对齐——偏移清零，恢复时条目完整显示；
+     *     展示"记忆了条目、不记忆半截"的差异策略。</li>
+     * </ul>
+     */
+    public static final int MODE_EXACT = 0;
+    public static final int MODE_ITEM_HEAD = 1;
 
     private TextRowAdapter adapter;
     private String listId;
     private int span;
+    private int restoreMode;
     private RecyclerView recyclerView;
 
     /** 工厂方法：参数必须走 arguments（进程被杀恢复后不丢） */
     public static ListFragment newInstance(String listId, int span) {
+        return newInstance(listId, span, MODE_EXACT);
+    }
+
+    public static ListFragment newInstance(String listId, int span, int restoreMode) {
         ListFragment fragment = new ListFragment();
         Bundle args = new Bundle();
         args.putString(ARG_LIST_ID, listId);
         args.putInt(ARG_SPAN, span);
+        args.putInt(ARG_RESTORE_MODE, restoreMode);
         fragment.setArguments(args);
         return fragment;
     }
@@ -68,6 +87,7 @@ public class ListFragment extends Fragment {
         Bundle args = getArguments();
         listId = args != null ? args.getString(ARG_LIST_ID, "demo.default") : "demo.default";
         span = args != null ? args.getInt(ARG_SPAN, 1) : 1;
+        restoreMode = args != null ? args.getInt(ARG_RESTORE_MODE, MODE_EXACT) : MODE_EXACT;
     }
 
     @Nullable
@@ -101,10 +121,75 @@ public class ListFragment extends Fragment {
         } else {
             layoutManager = new LinearLayoutManager(requireContext());
         }
+
+        // ---- 状态恢复（首帧定位，全程无抖动）----
+        // ① 先在 LayoutManager 上设置 pending anchor（scrollToPositionWithOffset
+        //    允许在 attach 前调用），首次布局即消费，不会出现"先画顶部再跳"的抖动；
+        // ② 再用 OnPreDrawListener 在首帧绘制前做一次像素级校正——消除
+        //    item margin/padding 带来的 1~2px~20px 残差（即此前"多出上方一小段"的瑕疵）。
+        int[] state = ScrollStateKeeper.restore(requireContext(), listId);
+        int[] safe = ScrollStateKeeper.clamp(state, ROW_COUNT, viewportHeight());
+        int pendingPosition = -1;
+        int pendingOffset = 0;
+        int exactTargetTop = 0;
+        if (safe != null) {
+            pendingPosition = safe[0];
+            exactTargetTop = safe[1]; // 原始语义：child.getTop()（含 margin/padding 的真实像素位）
+            pendingOffset = restoreMode == MODE_ITEM_HEAD ? 0 : safe[1];
+            if (layoutManager instanceof LinearLayoutManager) {
+                ((LinearLayoutManager) layoutManager)
+                        .scrollToPositionWithOffset(pendingPosition, pendingOffset);
+            }
+        }
+
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(adapter);
 
-        restoreScrollState();
+        if (pendingPosition >= 0) {
+            installFirstFrameCorrection(pendingPosition, exactTargetTop);
+            if (getActivity() != null) {
+                ToastCenter.show(getActivity(),
+                        restoreMode == MODE_ITEM_HEAD
+                                ? "已定位到第 " + (pendingPosition + 1) + " 条（条目头对齐，偏移清零）"
+                                : "已精确恢复：第 " + (pendingPosition + 1) + " 条（像素级）",
+                        CustomToast.Type.SUCCESS);
+            }
+        }
+    }
+
+    /**
+     * 首帧绘制前的像素级校正：
+     * scrollToPositionWithOffset 的锚点计算不感知 item 的 margin 与 RV 的
+     * paddingTop，恢复后可能残留一小段偏差；在 PreDraw 里把目标条目的
+     * child.top 校正到保存时的精确像素位，用户看不到任何跳变。
+     *
+     * @param targetTop EXACT 模式 = 保存时的 child.getTop() 原值（可为负，半截）；
+     *                  ITEM_HEAD 模式 = paddingTop（条目完整地贴着内容区顶部）
+     */
+    private void installFirstFrameCorrection(final int position, final int targetTop) {
+        final RecyclerView rv = recyclerView;
+        if (rv == null) {
+            return;
+        }
+        rv.getViewTreeObserver().addOnPreDrawListener(
+                new android.view.ViewTreeObserver.OnPreDrawListener() {
+                    @Override
+                    public boolean onPreDraw() {
+                        rv.getViewTreeObserver().removeOnPreDrawListener(this);
+                        if (rv.getLayoutManager() instanceof LinearLayoutManager) {
+                            android.view.View child =
+                                    ((LinearLayoutManager) rv.getLayoutManager())
+                                            .findViewByPosition(position);
+                            if (child != null) {
+                                int delta = targetTop - child.getTop();
+                                if (delta != 0) {
+                                    rv.scrollBy(0, delta);
+                                }
+                            }
+                        }
+                        return true;
+                    }
+                });
     }
 
     /** 自适应网格：列数随容器宽度变化（含横竖屏/折叠屏），最小列宽 170dp，1~4 列 */
@@ -122,30 +207,6 @@ public class ListFragment extends Fragment {
             }
         });
         return glm;
-    }
-
-    /** 恢复滚动位置：先恢复、等布局完成后再带偏移对齐 */
-    private void restoreScrollState() {
-        int[] state = ScrollStateKeeper.restore(requireContext(), listId);
-        if (state == null) {
-            return; // 首次进入：无历史状态，自然从顶部开始
-        }
-        int[] safe = ScrollStateKeeper.clamp(state, adapter.itemCount(), viewportHeight());
-        if (safe == null) {
-            return; // 空列表边界
-        }
-        RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
-        recyclerView.post(() -> {
-            // offset 支持负值：负数代表条目部分滚出屏幕（半截显示），
-            // scrollToPositionWithOffset 会原样恢复半截效果
-            if (lm instanceof LinearLayoutManager) {
-                ((LinearLayoutManager) lm).scrollToPositionWithOffset(safe[0], safe[1]);
-            }
-        });
-        if (getActivity() != null) {
-            ToastCenter.show(getActivity(),
-                    "已恢复滚动位置：第 " + (safe[0] + 1) + " 条", CustomToast.Type.SUCCESS);
-        }
     }
 
     private int viewportHeight() {

@@ -265,6 +265,63 @@ viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
 
 首次进入则提示"暂无历史进度，先滑动再退出试试"。复述把状态记忆从"体感"变成"可验收的数据"。
 
+### 5A.4 演示一 vs 演示二：两种恢复策略（刻意区分，勿混为一谈）
+
+| 维度 | 列表演演一（ListDemoActivity） | 列表演演二（ListDemoSecondActivity） |
+|---|---|---|
+| 恢复模式 | `ListFragment.MODE_EXACT` | `ListFragment.MODE_ITEM_HEAD` |
+| 偏移处理 | **原样保留**（含负偏移：条目半截滚出就恢复半截，如 -80px） | **强制清零**：定位到上次条目但 `offset=0`，条目**完完整整**贴顶显示 |
+| 定位精度 | 像素级（PreDraw 二次校正） | 条目级 |
+| 视觉结果 | 和退出瞬间完全一致 | 条目完整、从条目头开始 |
+| 适用语义 | "接着刚才看"（阅读进度） | "从某条重新看"（复习模式） |
+
+**恢复无瑕疵的实现（两模式共用）**：
+
+1. **无抖动**：`scrollToPositionWithOffset()` 在 `setLayoutManager` 之后、`setAdapter` 之前调用——pending anchor 在**首次布局**即消费，不再出现"先画顶部→再跳转"的闪动（旧版用 `post{}` 是抖动根源）；
+2. **无残差**：`scrollToPositionWithOffset` 的锚点不感知 item margin（卡片 6dp）与 RV paddingTop，恢复后会残留"上方一小段"；新增 `installFirstFrameCorrection()`——在 **OnPreDrawListener**（首帧绘制前）把目标条目的 `child.top` 校正到保存的精确像素位，用户零感知；
+3. **负偏移语义**：条目上半截滚出屏幕时 `child.getTop()` 为负（如 -80px），是合法状态，clamp 只过滤超出 viewport 的脏数据。
+
+### 5A.5 详情页滚动记忆
+
+详情页（难题解答）是 ScrollView，此前无状态保存导致"滑一半返回再进从头看"。现按 `problemId` 为 key（`detail.<id>`）在 `onPause` 保存 `scrollY`、`onCreate` 恢复，各难题互不串扰。
+
+---
+
+## 5B-1. 开屏加载动画（替代白屏）
+
+引入 `androidx.core:core-splashscreen:1.0.1`：
+
+```xml
+<style name="Theme.LifeRe.Splash" parent="Theme.SplashScreen">
+    <item name="windowSplashScreenBackground">@color/brand_primary</item>
+    <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+    <item name="windowSplashScreenAnimationDuration">400</item>
+    <item name="postSplashScreenTheme">@style/Theme.LifeReApplication</item>
+</style>
+```
+
+- MainActivity 主题切换为 `Theme.LifeRe.Splash`，`onCreate` 首行调用 `SplashScreen.Companion.installSplashScreen(this)`；
+- 冷启动首帧即**品牌蓝底 + Miku 立绘图标**（`drawable-nodpi/splash_logo.jpg`），结束无缝过渡到正常主题；
+- Android 12+ 由系统 SplashScreen 渲染（icon 会被裁切为圆形展示），低版本由库兼容模拟。
+
+---
+
+## 5B-2. 系统通知修复：POST_NOTIFICATIONS 运行时权限
+
+**此前收不到通知的根因**：targetSdk 33+ 时 `POST_NOTIFICATIONS` 是**运行时权限**，不请求则系统静默丢弃通知。
+
+修复闭环（提示实验室 →"系统通知"按钮）：
+
+```
+点击 → canNotify()? ── 是 → 立即发通知
+         │ 否
+         └→ requestPermissions(POST_NOTIFICATIONS)
+                → 授予 → 自动补发一条（请求→授权→收到 闭环）
+                → 拒绝 → WARNING 提示"后台提示将不可用"
+```
+
+Manifest 补充 `<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>`；`NotificationHelper.canNotify()` 同时校验运行时权限与 `areNotificationsEnabled()`（覆盖用户在系统设置里关闭渠道的情况）。
+
 ---
 
 ## 5B. 界面组件改进记录

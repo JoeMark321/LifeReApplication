@@ -43,6 +43,8 @@ public class MainActivity extends BaseMenuActivity
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        // Splash 必须在 super.onCreate 之前安装：让系统开屏与我们主题无缝衔接
+        androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         prefs = new AppPreferences(this);

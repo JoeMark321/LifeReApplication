@@ -70,8 +70,9 @@ public class ListDemoSecondActivity extends BaseMenuActivity {
                     "恢复耗时：%d ms（阈值 200ms）", cost));
         }
 
-        // 复用同一长列表 Fragment：listId 独立，滚动位置自动保存/恢复
-        Fragment listFragment = ListFragment.newInstance(LIST_ID, 1);
+        // 复用同一长列表 Fragment：listId 独立 + ITEM_HEAD 模式（偏移清零，
+        // 恢复时条目完整显示）——与演示一的 MODE_EXACT 像素级恢复形成对照
+        Fragment listFragment = ListFragment.newInstance(LIST_ID, 1, ListFragment.MODE_ITEM_HEAD);
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.containerList, listFragment)
                 .commit();

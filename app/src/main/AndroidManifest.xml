@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- 后台提示（系统通知）：Android 13+ 必须运行时请求 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
             android:allowBackup="true"
             android:dataExtractionRules="@xml/data_extraction_rules"
@@ -14,6 +17,7 @@
         <activity
                 android:name=".ui.main.MainActivity"
                 android:exported="true"
+                android:theme="@style/Theme.LifeRe.Splash"
                 android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

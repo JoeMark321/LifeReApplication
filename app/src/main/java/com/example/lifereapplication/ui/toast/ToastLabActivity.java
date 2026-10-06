@@ -1,9 +1,13 @@
 package com.example.lifereapplication.ui.toast;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.Button;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import com.example.lifereapplication.R;
 import com.example.lifereapplication.ui.lifecycle.LifecycleDemoActivity;
@@ -80,12 +84,32 @@ public class ToastLabActivity extends BaseMenuActivity {
                             }
                         }));
 
-        findViewById(R.id.btnNotify).setOnClickListener(v ->
+        findViewById(R.id.btnNotify).setOnClickListener(v -> {
+            if (NotificationHelper.canNotify(this)) {
                 NotificationHelper.showNotification(this, "生命周期Re",
-                        "这是一条后台提示：点我回到首页"));
+                        "这是一条后台提示：点我回到首页");
+            } else {
+                // Android 13+ 通知是运行时权限：首次点击先请求，授予后自动补发
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+            }
+        });
 
         findViewById(R.id.btnCenter).setOnClickListener(v ->
                 ToastCenter.show(this, "本条经 ToastCenter 出口，样式=设置页的偏好", CustomToast.Type.INFO));
+    }
+
+    /** 通知权限授予后自动补发一条，形成"请求→授权→收到"的闭环 */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 1001 && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            NotificationHelper.showNotification(this, "生命周期Re",
+                    "通知权限已授予：这是一条后台提示，点我回到首页");
+        } else {
+            ToastCenter.show(this, "通知权限被拒绝：后台提示将不可用", CustomToast.Type.WARNING);
+        }
     }
 
     // ---------- 下拉菜单 ----------

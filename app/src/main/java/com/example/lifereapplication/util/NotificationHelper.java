@@ -5,9 +5,12 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
 import com.example.lifereapplication.R;
 import com.example.lifereapplication.ui.main.MainActivity;
@@ -18,6 +21,17 @@ public class NotificationHelper {
     private static final String CHANNEL_NAME = "生命周期学习应用";
     private static int notificationId = 0;
 
+    /** 是否已具备发通知的全部条件：应用内开关 + 系统权限（Android 13+ 运行时） */
+    public static boolean canNotify(Context context) {
+        if (ContextCompat.checkSelfPermission(context,
+                android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            return false;
+        }
+        return NotificationManagerCompat.from(context).areNotificationsEnabled();
+    }
+
+    /** 发通知前必须先 {@link #canNotify}，否则 Android 13+ 会静默丢弃 */
     public static void showNotification(Context context, String title, String message) {
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 

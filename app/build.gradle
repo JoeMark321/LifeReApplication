@@ -45,6 +45,8 @@ dependencies {
     annotationProcessor libs.room.compiler
     // ViewPager2：Fragment 联动
     implementation libs.viewpager2
+    // 开屏 Splash（替代冷启动白屏）
+    implementation libs.core.splashscreen
     testImplementation libs.junit
     androidTestImplementation libs.espresso.core
     androidTestImplementation libs.ext.junit
