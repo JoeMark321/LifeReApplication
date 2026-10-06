@@ -44,7 +44,18 @@ public class MainActivity extends BaseMenuActivity
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         // Splash 必须在 super.onCreate 之前安装：让系统开屏与我们主题无缝衔接
-        androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen(this);
+        androidx.core.splashscreen.SplashScreen splashScreen =
+                androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen(this);
+        // 开屏停留 1.2s（系统默认"首帧就绪即退"，太快看不清），再 300ms 淡出
+        final long splashStart = android.os.SystemClock.uptimeMillis();
+        splashScreen.setKeepOnScreenCondition(() ->
+                android.os.SystemClock.uptimeMillis() - splashStart < 1200);
+        splashScreen.setOnExitAnimationListener(splashScreenView ->
+                splashScreenView.getView().animate()
+                        .alpha(0f)
+                        .setDuration(300)
+                        .withEndAction(splashScreenView::remove)
+                        .start());
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         prefs = new AppPreferences(this);
