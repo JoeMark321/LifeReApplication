@@ -1,35 +1,76 @@
-﻿﻿﻿<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+﻿﻿﻿﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- 顶层 FrameLayout：承载全屏开屏遮罩（仅冷启动展示，2s 后淡出） -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/bg_page">
+    android:layout_height="match_parent">
 
-    <!-- 顶部工具栏：右上角溢出菜单（⋮）由代码填充 -->
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="?attr/actionBarSize"
-        android:background="@color/brand_primary"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        android:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/bg_page">
+
+        <!-- 顶部工具栏：右上角溢出菜单（⋮）由代码填充 -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
+            android:background="@color/brand_primary"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            android:popupTheme="@style/ThemeOverlay.LifeRe.Popup" />
+
+        <!--
+          列表是页面唯一滚动容器：
+          ① 避免 ScrollView 嵌套 RecyclerView 导致的“一次性测量全部 Item”，
+             保证非可见项不会被创建与绑定（真正的懒加载）；
+          ② 保证 RecyclerView 自身的复用与回收机制生效。
+          头部引导内容作为 Adapter 的第 0 项参与复用。
+        -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingTop="4dp"
+            android:paddingBottom="16dp"
+            android:scrollbars="vertical" />
+
+    </LinearLayout>
 
     <!--
-      列表是页面唯一滚动容器：
-      ① 避免 ScrollView 嵌套 RecyclerView 导致的“一次性测量全部 Item”，
-         保证非可见项不会被创建与绑定（真正的懒加载）；
-      ② 保证 RecyclerView 自身的复用与回收机制生效。
-      头部引导内容作为 Adapter 的第 0 项参与复用。
+      应用内开屏遮罩（自绘，跨 ROM 可控）：
+      与系统 SplashScreen 同款视觉（品牌蓝图底 + Miku 图标），
+      冷启动时覆盖 2s 后 300ms 淡出；热启动不展示（SplashGate 冷启动标记）。
+      clickable=true 吞掉遮罩期间的所有触摸。
     -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
+    <FrameLayout
+        android:id="@+id/splashOverlay"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingTop="4dp"
-        android:paddingBottom="16dp"
-        android:scrollbars="vertical" />
+        android:layout_height="match_parent"
+        android:background="@color/brand_primary"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
 
-</LinearLayout>
+        <androidx.cardview.widget.CardView
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:layout_gravity="center"
+            app:cardCornerRadius="110dp"
+            app:cardElevation="0dp">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/app_name"
+                android:scaleType="centerCrop"
+                android:src="@drawable/splash_logo" />
+
+        </androidx.cardview.widget.CardView>
+
+    </FrameLayout>
+
+</FrameLayout>

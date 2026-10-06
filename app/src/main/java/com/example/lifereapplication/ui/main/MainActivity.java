@@ -43,21 +43,25 @@ public class MainActivity extends BaseMenuActivity
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        // Splash 必须在 super.onCreate 之前安装：让系统开屏与我们主题无缝衔接
-        androidx.core.splashscreen.SplashScreen splashScreen =
-                androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen(this);
-        // 开屏停留 2s（系统默认"首帧就绪即退"，太快看不清），再 300ms 淡出
-        final long splashStart = android.os.SystemClock.uptimeMillis();
-        splashScreen.setKeepOnScreenCondition(() ->
-                android.os.SystemClock.uptimeMillis() - splashStart < 2000);
-        splashScreen.setOnExitAnimationListener(splashScreenView ->
-                splashScreenView.getView().animate()
-                        .alpha(0f)
-                        .setDuration(300)
-                        .withEndAction(splashScreenView::remove)
-                        .start());
+        // 系统级 Splash（品牌蓝 + 图标）与主题无缝衔接
+        androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // 应用内开屏遮罩：跨 ROM 可控的 2s 停留 + 300ms 淡出。
+        // 仅冷启动（进程新建）展示一次；热启动/旋屏重建不展示（SplashGate + savedInstanceState 双保险）。
+        // 系统级 SplashScreen 在 MIUI/HyperOS 上"一闪而过"不可控，故停留与淡出全部自绘。
+        View splashOverlay = findViewById(R.id.splashOverlay);
+        boolean showSplash = SplashGate.consumeColdLaunch() && savedInstanceState == null;
+        if (showSplash) {
+            splashOverlay.setVisibility(View.VISIBLE);
+            splashOverlay.postDelayed(() -> splashOverlay.animate()
+                            .alpha(0f)
+                            .setDuration(300)
+                            .withEndAction(() -> splashOverlay.setVisibility(View.GONE))
+                            .start(),
+                    2000);
+        }
         prefs = new AppPreferences(this);
         setupToolbar();
 
