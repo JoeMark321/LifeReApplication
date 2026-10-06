@@ -80,6 +80,11 @@ public final class ScrollStateKeeper {
     /**
      * 钳制为可安全恢复的状态（处理空列表 / 数据变少 / 尺寸变化）。
      *
+     * <p><b>负偏移是合法状态</b>：第一条可见项部分滚出屏幕时
+     * child.top 为负（如露出下半截 80px → offset=-80px），
+     * {@code scrollToPositionWithOffset} 支持负值并会原样恢复半截效果，
+     * 因此这里<b>必须保留</b>负值，绝不归零——否则就是"回来变成完整条目头"。</p>
+     *
      * @return 钳制后的 {position, offset}；列表为空时返回 null 表示放弃恢复
      */
     public static int[] clamp(int[] state, int itemCount, int viewportHeight) {
@@ -87,10 +92,10 @@ public final class ScrollStateKeeper {
             return null;
         }
         int position = Math.min(Math.max(state[0], 0), itemCount - 1);
-        int offset = Math.max(state[1], 0);
-        // 偏移异常大（如列表项尺寸变化/横竖屏切换导致 viewport 变化）时归零，
-        // 退化为“滚到该位置”而非“带偏移对齐”，视觉上仍然正确
-        if (offset > viewportHeight) {
+        int offset = state[1];
+        // 仅当绝对值超出 viewport（横竖屏切换/数据剧变导致的脏数据）时归零，
+        // 退化为"滚到该位置"；正常范围内的正负偏移全部原样保留
+        if (Math.abs(offset) > viewportHeight) {
             offset = 0;
         }
         return new int[]{position, offset};

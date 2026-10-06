@@ -38,11 +38,11 @@ public class ChapterPagerAdapter extends FragmentStateAdapter {
             new ExampleItem("第四章 · 混合复习", "回到线性列表，验证前面章节状态")
     );
 
-    /** 每章对应的列表标识（ScrollStateKeeper 的 key）与 span */
+    /** 每章对应的列表标识（ScrollStateKeeper 的 key）与 span；0 = 按屏宽自适应列数 */
     private static final String[] LIST_IDS = {
             "chapter.1", "chapter.2", "chapter.3", "chapter.4"
     };
-    private static final int[] SPANS = {1, 2, 3, 1};
+    private static final int[] SPANS = {1, 0, 0, 1};
 
     public ChapterPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
         super(fragmentActivity);

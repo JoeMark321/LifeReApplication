@@ -43,9 +43,11 @@ public class ScrollStateKeeperTest {
     }
 
     @Test
-    public void clamp_negativeOffset_fixedToZero() {
-        int[] result = ScrollStateKeeper.clamp(new int[]{3, -40}, 10, 2000);
-        assertArrayEquals(new int[]{3, 0}, result);
+    public void clamp_negativeOffset_keptAsPartialItem() {
+        // 需求核心：条目滚出屏幕一半（如偏移 -80px）时，恢复必须仍是半截，
+        // 而不是回到完整条目头 —— 负偏移是合法状态，必须原样保留
+        int[] result = ScrollStateKeeper.clamp(new int[]{3, -80}, 10, 2000);
+        assertArrayEquals(new int[]{3, -80}, result);
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.example.lifereapplication.ui.detail;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -56,6 +57,29 @@ public class DetailActivity extends BaseMenuActivity {
         viewModel = new ViewModelProvider(this).get(DetailViewModel.class);
         viewModel.getProblem().observe(this, this::bindProblemData);
         viewModel.loadProblem(problemId);
+
+        // 详情页滚动记忆：解决"滑到一半返回，再进又从开头看"的问题。
+        // key 按 problemId 区分，不同难题互不串扰。
+        detailScrollKey = "detail." + problemId;
+        scrollView = findViewById(R.id.scrollDetail);
+        int[] state = com.example.lifereapplication.util.ScrollStateKeeper
+                .restore(this, detailScrollKey);
+        if (state != null && state[1] > 0) {
+            scrollView.post(() -> scrollView.scrollTo(0, state[1]));
+        }
+    }
+
+    private String detailScrollKey;
+    private ScrollView scrollView;
+
+    /** 滚动位置在 onPause 保存（保证被调用的收尾回调），scrollY 存入 offset 位 */
+    @Override
+    public void onPause() {
+        if (scrollView != null && detailScrollKey != null) {
+            com.example.lifereapplication.util.ScrollStateKeeper
+                    .save(this, detailScrollKey, 0, scrollView.getScrollY());
+        }
+        super.onPause();
     }
 
     private void bindProblemData(Problem problem) {

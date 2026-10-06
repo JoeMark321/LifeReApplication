@@ -93,7 +93,11 @@ public class ListFragment extends Fragment {
 
         RecyclerView.LayoutManager layoutManager;
         if (span > 1) {
+            // 明确列数（旧调用方式）
             layoutManager = new GridLayoutManager(requireContext(), span);
+        } else if (span == 0) {
+            // 自适应列数：按最小列宽 170dp 动态计算（宽屏自动加列，窄屏自动减列）
+            layoutManager = createAdaptiveGridLayout();
         } else {
             layoutManager = new LinearLayoutManager(requireContext());
         }
@@ -101,6 +105,23 @@ public class ListFragment extends Fragment {
         recyclerView.setAdapter(adapter);
 
         restoreScrollState();
+    }
+
+    /** 自适应网格：列数随容器宽度变化（含横竖屏/折叠屏），最小列宽 170dp，1~4 列 */
+    private GridLayoutManager createAdaptiveGridLayout() {
+        final GridLayoutManager glm = new GridLayoutManager(requireContext(), 2);
+        final int minColWidth = (int) (170 * getResources().getDisplayMetrics().density);
+        recyclerView.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, ob, od) -> {
+            int width = r - l;
+            if (width <= 0) {
+                return;
+            }
+            int cols = Math.max(1, Math.min(4, width / minColWidth));
+            if (cols != glm.getSpanCount()) {
+                glm.setSpanCount(cols);
+            }
+        });
+        return glm;
     }
 
     /** 恢复滚动位置：先恢复、等布局完成后再带偏移对齐 */
@@ -115,9 +136,9 @@ public class ListFragment extends Fragment {
         }
         RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
         recyclerView.post(() -> {
-            if (lm instanceof GridLayoutManager) {
-                ((GridLayoutManager) lm).scrollToPositionWithOffset(safe[0], safe[1]);
-            } else if (lm instanceof LinearLayoutManager) {
+            // offset 支持负值：负数代表条目部分滚出屏幕（半截显示），
+            // scrollToPositionWithOffset 会原样恢复半截效果
+            if (lm instanceof LinearLayoutManager) {
                 ((LinearLayoutManager) lm).scrollToPositionWithOffset(safe[0], safe[1]);
             }
         });
@@ -160,9 +181,11 @@ public class ListFragment extends Fragment {
         if (position < 0) {
             return;
         }
+        // 不减 paddingTop：scrollToPositionWithOffset 的坐标系就是相对 RV 顶边，
+        // 条目滚出屏幕时 top 为负（半截），恢复时要原样还原这一半
         View firstChild = recyclerView.getChildAt(0);
-        offset = firstChild == null ? 0 : firstChild.getTop() - recyclerView.getPaddingTop();
-        ScrollStateKeeper.save(requireContext(), listId, position, offset);
+        int pixelOffset = firstChild == null ? 0 : firstChild.getTop();
+        ScrollStateKeeper.save(requireContext(), listId, position, pixelOffset);
     }
 
     @Override

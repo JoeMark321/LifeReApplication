@@ -133,21 +133,13 @@ public class ListDemoActivity extends BaseMenuActivity {
         }
     }
 
-    /** span 自适应：竖屏 1/2/3，横屏 2/2/3（宽屏网格收益更大） */
+    /** span：线性=1 列；网格传 0 = 按屏宽自适应（最小列宽 170dp），宽屏自动加列 */
     private int spanFor(String tag) {
-        boolean land = isLandscape;
-        switch (tag) {
-            case TAG_LINEAR:
-                return land ? 2 : 1;
-            case TAG_GRID2:
-                return 2;
-            default:
-                return 3;
-        }
+        return TAG_LINEAR.equals(tag) ? 1 : 0;
     }
 
     private int secondarySpanFor(String primaryTag) {
-        return TAG_LINEAR.equals(primaryTag) ? 2 : 1;
+        return TAG_LINEAR.equals(primaryTag) ? 0 : 1;
     }
 
     // ---------- 下拉菜单 ----------
