@@ -2,6 +2,13 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.LifeReApplication" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/brand_primary</item>
+        <!-- 刘海屏适配：内容延伸进刘海区域，配合 fitSystemWindows 不遮挡状态栏内容 -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <!-- 现代化滚动条：圆角胶囊拇指，统一所有列表观感 -->
+        <item name="android:scrollbarThumbVertical">@drawable/scrollbar_thumb</item>
+        <item name="android:scrollbarSize">@dimen/scrollbar_size</item>
+        <item name="android:scrollbarDefaultDelayBeforeFade">800</item>
+        <item name="android:scrollbarFadeDuration">300</item>
     </style>
 
     <style name="Theme.LifeReApplication" parent="Base.Theme.LifeReApplication" />

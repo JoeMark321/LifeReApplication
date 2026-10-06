@@ -43,6 +43,10 @@
                 android:label="列表演示"
                 android:configChanges="orientation|screenSize" />
         <activity
+                android:name=".ui.chapter.ChapterActivity"
+                android:exported="false"
+                android:label="章节学习" />
+        <activity
                 android:name=".ui.dialog.DialogStyleActivity"
                 android:exported="false"
                 android:label="对话框风格页面"

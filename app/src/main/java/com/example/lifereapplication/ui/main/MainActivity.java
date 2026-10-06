@@ -12,6 +12,7 @@ import com.example.lifereapplication.data.memory.LifecycleEventLog;
 import com.example.lifereapplication.data.model.Problem;
 import com.example.lifereapplication.data.prefs.AppPreferences;
 import com.example.lifereapplication.ui.detail.DetailActivity;
+import com.example.lifereapplication.ui.chapter.ChapterActivity;
 import com.example.lifereapplication.ui.lifecycle.LifecycleDemoActivity;
 import com.example.lifereapplication.ui.list.ListDemoActivity;
 import com.example.lifereapplication.ui.nav.BaseMenuActivity;
@@ -176,6 +177,12 @@ public class MainActivity extends BaseMenuActivity
 
     // ---------- 右上角下拉菜单 ----------
 
+    /** 上次访问页面标签（右上角菜单保存逻辑的可视化） */
+    private String lastPageLabel() {
+        String last = prefs.getLastPage();
+        return last == null ? "无记录" : last.replace("Activity", "");
+    }
+
     @Override
     protected Page page() {
         return Page.MAIN;
@@ -186,7 +193,9 @@ public class MainActivity extends BaseMenuActivity
         return Arrays.asList(
                 new NavDestination(1, "返回本页", MainActivity.class,
                         "当前就在首页，无需重复跳转", CustomToast.Type.WARNING),
-                new NavDestination(2, "列表演示", ListDemoActivity.class,
+                new NavDestination(2, "章节学习", ChapterActivity.class,
+                        "从【首页】跳到【章节学习】—— ViewPager2 联动 Fragment", CustomToast.Type.INFO),
+                new NavDestination(3, "列表演示", ListDemoActivity.class,
                         "从【首页】跳到【列表演示】—— 体验滚动位置记忆", CustomToast.Type.INFO),
                 new NavDestination(3, "生命周期演示", LifecycleDemoActivity.class,
                         "从【首页】跳到【生命周期演示】—— 实时观察回调顺序", CustomToast.Type.INFO),
@@ -195,7 +204,7 @@ public class MainActivity extends BaseMenuActivity
                 new NavDestination(5, "设置", SettingsActivity.class,
                         "从【首页】跳到【设置】—— 管理提示权限与样式", CustomToast.Type.INFO),
                 new NavDestination(6, "关于本项目", null,
-                        "LifeReApplication v2.0 · MVVM + Room + LiveData", CustomToast.Type.SUCCESS)
+                        "上次访问：" + lastPageLabel() + " · LifeReApplication v2.0", CustomToast.Type.SUCCESS)
         );
     }
 }

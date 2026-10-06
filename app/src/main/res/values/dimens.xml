@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 间距体系（4dp 网格） -->
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_sm">8dp</dimen>
+    <dimen name="space_md">12dp</dimen>
+    <dimen name="space_lg">16dp</dimen>
+    <dimen name="space_xl">24dp</dimen>
+
+    <!-- 圆角体系 -->
+    <dimen name="radius_sm">8dp</dimen>
+    <dimen name="radius_md">12dp</dimen>
+    <dimen name="radius_lg">16dp</dimen>
+    <dimen name="radius_pill">99dp</dimen>
+
+    <!-- 控件尺寸 -->
+    <dimen name="scrollbar_size">4dp</dimen>
+    <dimen name="banner_height">108dp</dimen>
+    <dimen name="banner_card_width">150dp</dimen>
+    <dimen name="badge_size">32dp</dimen>
+    <dimen name="toolbar_height">?attr/actionBarSize</dimen>
+
+    <!-- 字号体系 -->
+    <dimen name="text_caption">11sp</dimen>
+    <dimen name="text_body">13sp</dimen>
+    <dimen name="text_subtitle">15sp</dimen>
+    <dimen name="text_title">17sp</dimen>
+    <dimen name="text_headline">22sp</dimen>
+</resources>

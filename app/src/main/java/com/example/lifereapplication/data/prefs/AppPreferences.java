@@ -21,6 +21,7 @@ public class AppPreferences {
     private static final String KEY_DIALOG_ENABLED = "dialog_enabled";
     private static final String KEY_NOTIFY_ENABLED = "notify_enabled";
     private static final String KEY_LIFECYCLE_TRACE_ENABLED = "lifecycle_trace_enabled";
+    private static final String KEY_LAST_PAGE = "last_page";
 
     private final SharedPreferences sp;
 
@@ -60,6 +61,15 @@ public class AppPreferences {
 
     public boolean isLifecycleTraceEnabled() {
         return sp.getBoolean(KEY_LIFECYCLE_TRACE_ENABLED, true);
+    }
+
+    /** 右上角菜单跳转时记忆的目标页（Activity 类名），用于"返回时提示上一界面" */
+    public String getLastPage() {
+        return sp.getString(KEY_LAST_PAGE, null);
+    }
+
+    public void setLastPage(String pageClassName) {
+        sp.edit().putString(KEY_LAST_PAGE, pageClassName).apply();
     }
 
     public void setEnabled(String key, boolean value) {

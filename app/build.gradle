@@ -43,6 +43,8 @@ dependencies {
     // 持久化数据库：Room
     implementation libs.room.runtime
     annotationProcessor libs.room.compiler
+    // ViewPager2：Fragment 联动
+    implementation libs.viewpager2
     testImplementation libs.junit
     androidTestImplementation libs.espresso.core
     androidTestImplementation libs.ext.junit

@@ -10,8 +10,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.example.lifereapplication.R;
+import com.example.lifereapplication.data.prefs.AppPreferences;
 import com.example.lifereapplication.util.toast.CustomToast;
 import com.example.lifereapplication.util.toast.ToastCenter;
+import com.example.lifereapplication.util.toast.ToastDispatcher;
+import com.example.lifereapplication.util.toast.ToastQueueHost;
 
 import java.util.List;
 
@@ -50,6 +53,18 @@ public abstract class BaseMenuActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Toast 串行队列宿主：观察队列头，页面不可见时自动暂停渲染（LiveData 语义）
+        toastQueueHost = ToastQueueHost.attach(this);
+    }
+
+    private ToastQueueHost toastQueueHost;
+
+    @Override
+    protected void onDestroy() {
+        if (toastQueueHost != null) {
+            toastQueueHost.detach();
+        }
+        super.onDestroy();
     }
 
     /** 子类返回自身所属页面，用于标题与提示文案 */
@@ -91,11 +106,14 @@ public abstract class BaseMenuActivity extends AppCompatActivity {
             if (item.getItemId() != destination.getId()) {
                 continue;
             }
-            // 每个页面、每个菜单项都有独立提示文案
-            ToastCenter.show(this, destination.getToastMessage(), destination.getToastType());
+            // 每个页面、每个菜单项都有独立提示文案（走节流+串行队列出口）
+            ToastDispatcher.dispatch(this, destination.getToastMessage(),
+                    destination.getToastType(), false);
 
             Class<?> target = destination.getTarget();
             if (target != null && target != getClass()) {
+                // 记住上次访问的页面：返回本页时可提示"上次离开去哪了"
+                new AppPreferences(this).setLastPage(target.getSimpleName());
                 startActivity(new Intent(this, target));
                 overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
             }
