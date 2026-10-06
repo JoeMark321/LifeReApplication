@@ -265,27 +265,28 @@ viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
 
 首次进入则提示"暂无历史进度，先滑动再退出试试"。复述把状态记忆从"体感"变成"可验收的数据"。
 
-### 5A.4 演示一 / 演示二：统一「条目头对齐」恢复策略（v3，按需求重定义）
+### 5A.4 演示一 vs 演示二：两种恢复策略（v4 最终定义，刻意区分）
 
-**需求原文**：返回时的偏移量要是 0——不管当前条目是否已部分滚出屏幕，一旦定位到某个条目，就让该条目**完完整整**显示出来；除非条目贴近列表尾无法贴顶，那就直接贴底（"到底了就到底"），属于正常列表行为。
+| 维度 | 列表演演一（ListDemoActivity） | 列表演演二（ListDemoSecondActivity） |
+|---|---|---|
+| 恢复模式 | `MODE_EXACT` | `MODE_ITEM_HEAD` |
+| 语义 | **该在哪就在哪**——保存/恢复第一条可见项的真实像素位（`child.getTop()` 原值，含负值半截），不跳上/下一条、不显示完整 | **条目头对齐**——偏移清零，恢复时该条目完完整整贴顶显示 |
+| 视觉结果 | 和退出瞬间逐像素一致 | 条目完整、从条目头开始 |
+| 适用语义 | 阅读进度（接着刚才那一眼继续看） | 复习模式（从这条重新看全貌） |
 
-**保存语义（v3，[ListFragment.saveScrollState()](../app/src/main/java/com/example/lifereapplication/ui/list/ListFragment.java)）**：
-
-1. 取 `findFirstVisibleItemPosition` + 首个子 View 的 `top`；
-2. 若 `top < 0`（首条只剩半截）→ **跳过它**，改记下一条（第一条完整可见的条目）；
-3. 偏移量**恒存 0**。
-
-**恢复表现**：
-
-- 目标条目**完整贴顶**（条目头对齐），绝不出现"上方多出半截/一大段"；
-- 条目贴近列表尾、贴不了顶 → RecyclerView 自然钳制到底，不会拉出空白；
-- 保存与恢复的偏移量恒为 0 → 不存在"返回时偏移量增大"的可能。
-
-**无瑕疵实现（沿用）**：
+**实现要点（两模式共用）**：
 
 1. **无抖动**：`scrollToPositionWithOffset` 在 `setAdapter` 前调用，pending anchor 首次布局即消费；
-2. **无残差**：`installFirstFrameCorrection()` 在 OnPreDraw（首帧绘制前）把目标条目 `child.top` 校正到 `paddingTop`，抵消 item margin/padding 锚点偏差；
-3. 历史 v2 的"负偏移半截还原"（MODE_EXACT）已按新需求**弃用**，常量保留仅为 API 兼容；一/二的差异不再在偏移策略，而在**演示二多出内容复述卡**（量化输出位置/策略/耗时）。
+2. **无残差**：`installFirstFrameCorrection(pos, targetTop)` 在 OnPreDraw（首帧绘制前）把目标条目 `child.top` 校正到 targetTop——EXACT 传保存的原始像素、ITEM_HEAD 传 `paddingTop`，抵消 item margin/padding 锚点偏差；
+3. **负偏移合法**：条目上半截滚出屏幕时 `child.getTop()` 为负，EXACT 模式必须原样保留（这是"精确"的一部分）；clamp 只过滤超出 viewport 的脏数据；
+4. **底部自然钳制**：条目贴近列表尾时系统自动贴底，不拉空白。
+
+### 5A.4.1 能否全局设置状态保持？
+
+可以，且分两种层级：
+
+- **RecyclerView 列表（已是全局）**：`ListFragment` 是全项目唯一列表容器（首页列表、章节、演示一/二全部复用它），`ScrollStateKeeper` 按 `listId` 隔离——**新增任何列表页只需 `ListFragment.newInstance(唯一id, span)` 即自动获得状态保持**，无需再写保存/恢复代码；
+- **ScrollView 页面（半全局）**：详情页、生命周期演示页已分别接入（key 按页面区分）。全局化的做法是把"onPause 保存 scrollY / onCreate 恢复"下沉到 `BaseMenuActivity`：遍历 contentView 找到 ScrollView 自动挂钩。当前未下沉的原因是各页 ScrollView 语义不同（有的需要每次回顶），按需接入更可控——需要的话一行扩展即可。
 
 ### 5A.5 详情页滚动记忆
 

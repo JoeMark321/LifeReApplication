@@ -3,6 +3,7 @@ package com.example.lifereapplication.ui.lifecycle;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -10,6 +11,7 @@ import androidx.annotation.Nullable;
 import com.example.lifereapplication.R;
 import com.example.lifereapplication.data.memory.LifecycleEventLog;
 import com.example.lifereapplication.data.prefs.AppPreferences;
+import com.example.lifereapplication.util.ScrollStateKeeper;
 import com.example.lifereapplication.ui.detail.DetailActivity;
 import com.example.lifereapplication.ui.dialog.DialogStyleActivity;
 import com.example.lifereapplication.ui.main.MainActivity;
@@ -34,9 +36,12 @@ import java.util.List;
  */
 public class LifecycleDemoActivity extends BaseMenuActivity {
 
+    private static final String SCROLL_KEY = "lifecycle.demo";
+
     private AppPreferences prefs;
     private TextView textLog;
     private TextView textFlowHint;
+    private ScrollView scrollView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -47,6 +52,13 @@ public class LifecycleDemoActivity extends BaseMenuActivity {
 
         textLog = findViewById(R.id.textLog);
         textFlowHint = findViewById(R.id.textFlowHint);
+
+        // 滚动状态记忆：滑动一半退出再进，精确回到当前 scrollY（与详情页同方案）
+        scrollView = findViewById(R.id.scrollDemo);
+        int[] saved = ScrollStateKeeper.restore(this, SCROLL_KEY);
+        if (saved != null && saved[1] > 0) {
+            scrollView.post(() -> scrollView.scrollTo(0, saved[1]));
+        }
 
         Button btnOpenDetail = findViewById(R.id.btnOpenDetail);
         Button btnOpenDialog = findViewById(R.id.btnOpenDialog);
@@ -91,9 +103,13 @@ public class LifecycleDemoActivity extends BaseMenuActivity {
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    public void onPause() {
         trace("onPause");
+        // 记录滚动位置（保证被调用的收尾回调；apply 异步写不卡 onPause）
+        if (scrollView != null) {
+            ScrollStateKeeper.save(this, SCROLL_KEY, 0, scrollView.getScrollY());
+        }
+        super.onPause();
     }
 
     @Override
