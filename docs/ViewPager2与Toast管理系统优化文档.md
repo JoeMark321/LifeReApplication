@@ -7,21 +7,28 @@
 
 ## 1. 兼容性处理
 
-### 1.1 刘海屏适配（多 SDK 版本）
+### 1.1 刘海屏 / 全面屏适配（多 SDK 版本，已实测修复）
 
-在主题中声明（[themes.xml](../app/src/main/res/values/themes.xml)）：
+**问题现象**：Android 15+ 设备上内容顶进状态栏，标题被状态栏图标遮挡。
 
-```xml
-<item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
-```
+**根因**：targetSdk 35+ 时系统**强制 edge-to-edge**（状态栏透明、内容全屏延伸），
+旧式"内容从状态栏下开始"的默认行为不复存在，必须手动处理 WindowInsets。
 
-| 模式 | 行为 | 本项目选择 |
+**跨版本自动实现方案**（两层配合，无版本分支代码）：
+
+| 层 | 实现 | 覆盖版本 |
 |---|---|---|
-| `default`（默认） | 刘海区域内不渲染，竖屏正常横屏留黑边 | |
-| `shortEdges` | 内容延伸进刘海，全面屏沉浸感 | ✅ |
-| `never` / `always` | 强制不进/进刘海 | 特殊场景 |
+| 主题层 | [themes.xml](../app/src/main/res/values/themes.xml)：`statusBarColor=brand_primary` + `windowLayoutInDisplayCutoutMode=shortEdges` + `windowBackground=bg_page` | Android 11~14（着色）；15+（刘海模式与底色） |
+| 代码层 | [BaseMenuActivity.applyEdgeToEdgeInsets()](../app/src/main/java/com/example/lifereapplication/ui/nav/BaseMenuActivity.java)：监听 `android.R.id.content` 的 WindowInsets，Toolbar 顶部内边距 = 状态栏+刘海高度（蓝色自然延伸进状态栏），内容底部内边距 = 手势条高度 | 全版本（15+ 必需，14- 自动兼容 insets=0） |
 
-`shortEdges` 自 API 28 起可用，项目 minSdk 30 无需版本分支；Toolbar 使用 `?attr/actionBarSize` 并由系统 WindowInsets 自动下探，刘海不遮挡标题。
+**公共父主题**：日/夜主题共用 `Theme.LifeRe.Core`（values 定义，values-night 只做
+`Base.Theme.LifeReApplication parent=Theme.LifeRe.Core` 覆盖），避免两处维护。
+
+**实测**（模拟器 API 36 截屏验证）：状态栏图标渲染在品牌蓝背景上，标题"首页"
+完整可见，列表尾部不被手势条遮挡；夜间主题切换仅需覆盖颜色资源。
+
+> 注意：横屏刘海缺口在左右两侧（cutout top=0），纵向布局无需处理侧向 insets；
+> 如需完美适配侧边刘海，可扩展监听 `displayCutout` 的 left/right。
 
 ### 1.2 Arrays.asList 构造适配器数据（Chapter 用法）
 

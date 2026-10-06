@@ -1,7 +1,4 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.LifeReApplication" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
-    </style>
+    <!-- 夜间主题：只覆盖夜间专属项，公共属性全部继承 values/ 下的 Theme.LifeRe.Core -->
+    <style name="Base.Theme.LifeReApplication" parent="Theme.LifeRe.Core" />
 </resources>

@@ -48,8 +48,10 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     };
 
     private final List<Problem> problems = new ArrayList<>();
+    private final List<Problem> featured = new ArrayList<>();
     private final OnItemClickListener listener;
     private final OnHeaderActionListener headerListener;
+    private final OnBannerClickListener bannerListener;
 
     private HeaderHolder headerHolder;
 
@@ -61,9 +63,17 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         void onQuickActionClick(String tag);
     }
 
-    public ProblemAdapter(OnItemClickListener listener, OnHeaderActionListener headerListener) {
+    /** 横幅点击：由 Activity 实现跳转 */
+    public interface OnBannerClickListener {
+        void onBannerClick(Problem problem);
+    }
+
+    public ProblemAdapter(OnItemClickListener listener,
+                          OnHeaderActionListener headerListener,
+                          OnBannerClickListener bannerListener) {
         this.listener = listener;
         this.headerListener = headerListener;
+        this.bannerListener = bannerListener;
         setHasStableIds(true);
     }
 
@@ -73,6 +83,22 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             problems.addAll(list);
         }
         notifyDataSetChanged();
+    }
+
+    /**
+     * 提交横幅数据（featured 主题）。
+     * 关键点：横幅 RecyclerView 在头部 item 内部，Activity 的 onCreate 阶段
+     * findViewById 拿不到它（还没被创建），因此数据先缓存在适配器，
+     * 由 bindHeader 在 HeaderHolder 创建时初始化并填充。
+     */
+    public void submitFeatured(List<Problem> list) {
+        featured.clear();
+        if (list != null) {
+            featured.addAll(list);
+        }
+        if (headerHolder != null && headerHolder.bannerAdapter != null) {
+            headerHolder.bannerAdapter.submit(featured);
+        }
     }
 
     @Override
@@ -86,7 +112,7 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         if (viewType == TYPE_HEADER) {
             View view = inflater.inflate(R.layout.item_home_header, parent, false);
-            HeaderHolder holder = new HeaderHolder(view);
+            HeaderHolder holder = new HeaderHolder(view, bannerListener);
             headerHolder = holder;
             return holder;
         }
@@ -115,6 +141,15 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         });
         holder.flowView.setCurrentStage("onCreate");
         holder.flowHint.setText(STAGE_HINTS[0]);
+
+        // 横幅只在 HeaderHolder 首次创建时初始化一次（复用不重建）
+        if (holder.bannerAdapter == null) {
+            holder.bannerAdapter = new BannerAdapter();
+            holder.banner.setAdapter(holder.bannerAdapter);
+            holder.banner.setLayoutManager(BannerAdapter.horizontalLayout(
+                    holder.itemView.getContext()));
+            holder.bannerAdapter.submit(featured);
+        }
     }
 
     private void bindProblem(ProblemHolder holder, Problem problem, int position) {
@@ -204,14 +239,21 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         final View cardFirst;
         final View cardSecond;
         final View cardThird;
+        final RecyclerView banner;
+        BannerAdapter bannerAdapter;
 
-        HeaderHolder(@NonNull View itemView) {
+        HeaderHolder(@NonNull View itemView, OnBannerClickListener bannerListener) {
             super(itemView);
             flowView = itemView.findViewById(R.id.lifecycleFlow);
             flowHint = itemView.findViewById(R.id.textFlowHint);
             cardFirst = itemView.findViewById(R.id.cardFirst);
             cardSecond = itemView.findViewById(R.id.cardSecond);
             cardThird = itemView.findViewById(R.id.cardThird);
+            banner = itemView.findViewById(R.id.rvBanner);
+            // 横幅点击路由给 Activity（BannerAdapter 通过 parent tag 取回调）
+            if (banner != null && bannerListener != null) {
+                banner.setTag((BannerAdapter.OnBannerClickListener) bannerListener::onBannerClick);
+            }
         }
     }
 

@@ -4,10 +4,14 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.example.lifereapplication.R;
 import com.example.lifereapplication.data.prefs.AppPreferences;
@@ -90,6 +94,41 @@ public abstract class BaseMenuActivity extends AppCompatActivity {
             getSupportActionBar().setTitle(title != null ? title : page().getTitle());
             getSupportActionBar().setSubtitle("MVVM 架构");
         }
+        applyEdgeToEdgeInsets(toolbar);
+    }
+
+    /**
+     * 全面屏（刘海屏/手势条）跨版本适配 —— 自动实现，一次接入全页面生效。
+     *
+     * <p>系统行为差异：</p>
+     * <ul>
+     *     <li><b>Android 15+（API 35+）</b>：强制 edge-to-edge，状态栏透明、
+     *     内容直接顶到屏幕最上方 —— 必须手动用 insets 腾出空间，否则 Toolbar
+     *     会被状态栏压住（这正是之前"顶上去"的根因）；</li>
+     *     <li><b>Android 11~14</b>：系统默认 decorFits（内容从状态栏下开始），
+     *     由主题 statusBarColor 着色，insets 通常为 0，本监听同样兼容；</li>
+     *     <li><b>刘海屏横屏</b>：cutout 的 top 通常为 0（缺口在左右两侧），
+     *     纵向内容不受影响。</li>
+     * </ul>
+     *
+     * <p>统一策略：Toolbar 顶部内边距 = 状态栏 + 刘海高度（品牌蓝自然延伸
+     * 进状态栏，标题不被遮挡）；内容底部内边距 = 手势条高度（列表不被
+     * 手势条遮住）。监听挂在 android.R.id.content 上，所有页面自动继承。</p>
+     */
+    private void applyEdgeToEdgeInsets(Toolbar toolbar) {
+        View decorContent = findViewById(android.R.id.content);
+        ViewCompat.setOnApplyWindowInsetsListener(decorContent, (v, insets) -> {
+            Insets bars = insets.getInsets(
+                    WindowInsetsCompat.Type.statusBars()
+                            | WindowInsetsCompat.Type.displayCutout()
+                            | WindowInsetsCompat.Type.navigationBars());
+            // 顶部：状态栏 + 刘海 → 让 Toolbar 自己垫高，蓝色延伸到状态栏
+            toolbar.setPadding(toolbar.getPaddingLeft(), bars.top,
+                    toolbar.getPaddingRight(), toolbar.getPaddingBottom());
+            // 底部：手势条 → 内容区整体让位，滚动条与列表尾项不被遮挡
+            v.setPadding(v.getPaddingLeft(), 0, v.getPaddingRight(), bars.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
     }
 
     @Override

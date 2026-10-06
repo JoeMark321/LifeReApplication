@@ -1,8 +1,20 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.LifeReApplication" parent="Theme.Material3.DayNight.NoActionBar">
+    <!--
+      公共核心主题（日/夜共用）：
+      全面屏适配采用「跨版本自动实现」策略——
+      ① Android 15+（API 35+）：系统强制 edge-to-edge，状态栏透明，
+         空间由 BaseMenuActivity 中的 WindowInsets 监听自动腾出（代码层）；
+      ② Android 11~14：statusBarColor 直接着品牌蓝，系统默认 decorFits，
+         与 ① 视觉完全一致，无需代码分支；
+      ③ windowBackground = 页面底色：edge-to-edge 时手势条区域/未被布局
+         覆盖处露出统一底色，不会出现刺眼黑条。
+    -->
+    <style name="Theme.LifeRe.Core" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/brand_primary</item>
-        <!-- 刘海屏适配：内容延伸进刘海区域，配合 fitSystemWindows 不遮挡状态栏内容 -->
+        <item name="android:statusBarColor">@color/brand_primary</item>
+        <item name="android:navigationBarColor">@color/bg_page</item>
+        <item name="android:windowBackground">@color/bg_page</item>
+        <!-- 刘海屏：内容延伸进刘海区域，配合 insets 监听不遮挡关键内容 -->
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <!-- 现代化滚动条：圆角胶囊拇指，统一所有列表观感 -->
         <item name="android:scrollbarThumbVertical">@drawable/scrollbar_thumb</item>
@@ -10,6 +22,9 @@
         <item name="android:scrollbarDefaultDelayBeforeFade">800</item>
         <item name="android:scrollbarFadeDuration">300</item>
     </style>
+
+    <!-- Base application theme（日间） -->
+    <style name="Base.Theme.LifeReApplication" parent="Theme.LifeRe.Core" />
 
     <style name="Theme.LifeReApplication" parent="Base.Theme.LifeReApplication" />
 

@@ -33,7 +33,8 @@ import java.util.List;
  * 每次回调都演示“该阶段该做什么/不该做什么”，与详情页内容互相印证。</p>
  */
 public class MainActivity extends BaseMenuActivity
-        implements ProblemAdapter.OnItemClickListener, ProblemAdapter.OnHeaderActionListener {
+        implements ProblemAdapter.OnItemClickListener, ProblemAdapter.OnHeaderActionListener,
+        ProblemAdapter.OnBannerClickListener {
 
     private MainViewModel viewModel;
     private ProblemAdapter adapter;
@@ -48,10 +49,8 @@ public class MainActivity extends BaseMenuActivity
 
         RecyclerView recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new ProblemAdapter(this, this);
+        adapter = new ProblemAdapter(this, this, this);
         recyclerView.setAdapter(adapter);
-
-        setupBanner();
 
         viewModel = new ViewModelProvider(this).get(MainViewModel.class);
         viewModel.getProblems().observe(this, problems -> {
@@ -59,6 +58,14 @@ public class MainActivity extends BaseMenuActivity
                 return;
             }
             adapter.setProblems(problems);
+            // 横幅数据：adapter 内部缓存，HeaderHolder 创建时自动填充
+            List<Problem> featured = new java.util.ArrayList<>();
+            for (Problem p : problems) {
+                if (p.isFeatured()) {
+                    featured.add(p);
+                }
+            }
+            adapter.submitFeatured(featured);
             // 数据就绪后依次演示三种提示体系
             NativeToast.show(this, "原生 Toast：数据已就绪（" + problems.size() + " 条）");
             CustomToast.show(this, "自定义 Toast：图标 + 圆角样式", CustomToast.Type.SUCCESS);
@@ -68,35 +75,14 @@ public class MainActivity extends BaseMenuActivity
         trace("onCreate");
     }
 
-    /** 首页顶部横向精选区：仅在此小段区域内响应水平手势 */
-    private void setupBanner() {
-        RecyclerView rvBanner = findViewById(R.id.rvBanner);
-        if (rvBanner == null) {
-            return;
-        }
-        rvBanner.setLayoutManager(BannerAdapter.horizontalLayout(this));
-        BannerAdapter bannerAdapter = new BannerAdapter();
-        // tag 携带回调，避免 Adapter 持有 Activity 强引用
-        rvBanner.setTag((BannerAdapter.OnBannerClickListener) problem -> {
-            Intent intent = new Intent(this, DetailActivity.class);
-            intent.putExtra(DetailActivity.EXTRA_PROBLEM_ID, problem.getId());
-            intent.putExtra(DetailActivity.EXTRA_SOURCE_PAGE, "首页横幅");
-            startActivity(intent);
-        });
-        rvBanner.setAdapter(bannerAdapter);
-        // 精选内容 = 标记为 featured 的主题，懒加载自列表数据
-        viewModel.getProblems().observe(this, problems -> {
-            if (problems == null) {
-                return;
-            }
-            List<Problem> featured = new java.util.ArrayList<>();
-            for (Problem p : problems) {
-                if (p.isFeatured()) {
-                    featured.add(p);
-                }
-            }
-            bannerAdapter.submit(featured);
-        });
+    /** 首页横幅点击：从"本周精选"直达对应主题详情 */
+    @Override
+    public void onBannerClick(Problem problem) {
+        Intent intent = new Intent(this, DetailActivity.class);
+        intent.putExtra(DetailActivity.EXTRA_PROBLEM_ID, problem.getId());
+        intent.putExtra(DetailActivity.EXTRA_SOURCE_PAGE, "首页横幅");
+        startActivity(intent);
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
 
     @Override
