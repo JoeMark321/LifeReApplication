@@ -122,20 +122,19 @@ public class ListFragment extends Fragment {
             layoutManager = new LinearLayoutManager(requireContext());
         }
 
-        // ---- 状态恢复（两步确定性定位，杜绝逐轮漂移）----
-        // 第 1 步：pending anchor 统一用 offset=0（该值在所有 LayoutManager/ROM 下
-        //          定位结果确定：条目头贴着内容区顶），在 setAdapter 前调用，首帧即生效；
-        // 第 2 步：PreDraw（首帧绘制前）用 scrollBy 精确补齐 (savedTop - 0) 的像素差——
-        //          scrollBy 是纯像素滚动、零误差，最终 child.top == savedTop 逐像素一致。
-        // 旧实现把负偏移直接塞进 pending anchor，部分 ROM/网格下锚点解析不精确，
-        // 且 PreDraw 监听可能在目标 child 尚未布局时被移除 → 校正失效 → 每轮漂移。
+        // ---- 状态恢复（两步确定性定位）----
+        // 第 1 步：pending anchor 统一 offset=0（定位结果确定：条目头贴内容区顶）；
+        // 第 2 步：PreDraw 内按 dy = child.top当前 − 目标 精确 scrollBy 补差
+        //          （scrollBy 正值=内容上移，child.top 相应减小，方向由公式保证）。
+        // 修复记录：此前把"目标值"直接当滚动量用，方向相反，每轮重进反向偏移
+        // 2×偏移量 → 反复进出从 #58 漂到 #40。
         int[] state = ScrollStateKeeper.restore(requireContext(), listId);
         int[] safe = ScrollStateKeeper.clamp(state, ROW_COUNT, viewportHeight());
         int pendingPosition = -1;
-        int correctionDelta = 0;
+        int targetTop = 0;
         if (safe != null) {
             pendingPosition = safe[0];
-            correctionDelta = restoreMode == MODE_EXACT ? safe[1] : recyclerView.getPaddingTop();
+            targetTop = restoreMode == MODE_EXACT ? safe[1] : recyclerView.getPaddingTop();
             if (layoutManager instanceof LinearLayoutManager) {
                 ((LinearLayoutManager) layoutManager)
                         .scrollToPositionWithOffset(pendingPosition, 0);
@@ -146,7 +145,7 @@ public class ListFragment extends Fragment {
         recyclerView.setAdapter(adapter);
 
         if (pendingPosition >= 0) {
-            installFirstFrameCorrection(pendingPosition, correctionDelta);
+            installFirstFrameCorrection(pendingPosition, targetTop);
             if (getActivity() != null) {
                 ToastCenter.show(getActivity(),
                         restoreMode == MODE_EXACT
@@ -158,13 +157,14 @@ public class ListFragment extends Fragment {
     }
 
     /**
-     * 首帧绘制前的像素级校正（scrollBy 纯像素滚动，零误差）：
-     * EXACT      → delta = 保存的 child.getTop() 原值（可为负，半截）；
-     * ITEM_HEAD  → delta = paddingTop（条目完整贴顶）。
+     * 首帧绘制前的像素级校正：
+     * dy = child.top当前 − 目标；scrollBy(0, dy) 后 child.top 恰好落到目标位。
+     * EXACT      → 目标 = 保存时的 child.getTop() 原值（可为负，半截）；
+     * ITEM_HEAD  → 目标 = paddingTop（条目完整贴顶）。
      * 监听直到目标 child 完成布局才移除并校正，杜绝"校正被跳过→逐轮漂移"。
-     * 条目在列表尾时 delta 会被 scrollBy 自然钳制到底（到底了就到底）。
+     * 条目在列表尾时 dy 会被 scrollBy 自然钳制到底（到底了就到底）。
      */
-    private void installFirstFrameCorrection(final int position, final int delta) {
+    private void installFirstFrameCorrection(final int position, final int targetTop) {
         final RecyclerView rv = recyclerView;
         if (rv == null) {
             return;
@@ -181,8 +181,10 @@ public class ListFragment extends Fragment {
                                 return true; // 目标条目尚未布局：保持监听，下帧再试
                             }
                             rv.getViewTreeObserver().removeOnPreDrawListener(this);
-                            if (delta != 0) {
-                                rv.scrollBy(0, delta);
+                            // scrollBy 正值=内容上移、child.top 减小；dy 公式保证方向正确
+                            int dy = child.getTop() - targetTop;
+                            if (dy != 0) {
+                                rv.scrollBy(0, dy);
                             }
                         }
                         return true;
