@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 列表演演三：选中项指示器（品牌色胶囊） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/bg_chip" />
+    <corners android:radius="16dp" />
+</shape>

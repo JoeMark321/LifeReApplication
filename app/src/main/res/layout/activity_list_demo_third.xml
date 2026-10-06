@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_page">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="?attr/actionBarSize"
+        android:background="@color/brand_primary"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        android:popupTheme="@style/ThemeOverlay.LifeRe.Popup" />
+
+    <FrameLayout
+        android:id="@+id/containerList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!--
+      列表演演三的自定义底部导航（与演示一的系统默认样式形成对比）：
+      ① 悬浮圆角卡片底座（四周留 12dp 边距 + 20dp 圆角 + 描边）；
+      ② 选中指示器换成品牌色胶囊（itemActiveIndicatorStyle）；
+      ③ 图标/文字着色 selector：选中=品牌蓝，未选=提示灰；
+      ④ 强制 labeled 模式让三个 tab 始终带文字。
+    -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNav"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_margin="12dp"
+        android:background="@drawable/bg_bottom_bar"
+        app:elevation="6dp"
+        app:itemActiveIndicatorStyle="@style/ThirdNavIndicator"
+        app:itemIconTint="@color/nav_item_tint"
+        app:itemTextColor="@color/nav_item_tint"
+        app:itemRippleColor="@color/bg_chip"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/menu_list_demo" />
+
+</LinearLayout>

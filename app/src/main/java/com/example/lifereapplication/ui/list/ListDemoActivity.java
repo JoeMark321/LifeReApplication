@@ -161,15 +161,17 @@ public class ListDemoActivity extends BaseMenuActivity {
                         "当前就在列表演示页，无需重复跳转", CustomToast.Type.WARNING),
                 new NavDestination(2, "列表演演二·复述", ListDemoSecondActivity.class,
                         "从【列表演演】跳到【列表演演二】—— 体验内容复述对比", CustomToast.Type.INFO),
-                new NavDestination(3, "章节学习", ChapterActivity.class,
+                new NavDestination(3, "列表演演三·自定义导航", ListDemoThirdActivity.class,
+                        "从【列表演演】跳到【列表演演三】—— 对比自定义导航样式", CustomToast.Type.INFO),
+                new NavDestination(4, "章节学习", ChapterActivity.class,
                         "从【列表演演】跳到【章节学习】—— 页级进度记忆对比", CustomToast.Type.INFO),
-                new NavDestination(4, "生命周期演示", LifecycleDemoActivity.class,
+                new NavDestination(5, "生命周期演示", LifecycleDemoActivity.class,
                         "从【列表演演】跳到【生命周期演示】—— 看回调时序", CustomToast.Type.INFO),
-                new NavDestination(5, "提示实验室", ToastLabActivity.class,
+                new NavDestination(6, "提示实验室", ToastLabActivity.class,
                         "从【列表演演】跳到【提示实验室】—— 对比三种 Toast", CustomToast.Type.INFO),
-                new NavDestination(6, "设置", SettingsActivity.class,
+                new NavDestination(7, "设置", SettingsActivity.class,
                         "从【列表演演】跳到【设置】—— 管理提示权限", CustomToast.Type.INFO),
-                new NavDestination(7, "回到首页", MainActivity.class,
+                new NavDestination(8, "回到首页", MainActivity.class,
                         "从【列表演演】跳到【首页】—— 返回难题清单", CustomToast.Type.SUCCESS)
         );
     }

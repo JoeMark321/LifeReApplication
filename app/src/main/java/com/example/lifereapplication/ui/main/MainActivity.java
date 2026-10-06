@@ -20,6 +20,7 @@ import com.example.lifereapplication.ui.chapter.ChapterActivity;
 import com.example.lifereapplication.ui.lifecycle.LifecycleDemoActivity;
 import com.example.lifereapplication.ui.list.ListDemoActivity;
 import com.example.lifereapplication.ui.list.ListDemoSecondActivity;
+import com.example.lifereapplication.ui.list.ListDemoThirdActivity;
 import com.example.lifereapplication.ui.nav.BaseMenuActivity;
 import com.example.lifereapplication.ui.nav.NavDestination;
 import com.example.lifereapplication.ui.settings.SettingsActivity;
@@ -207,13 +208,15 @@ public class MainActivity extends BaseMenuActivity
                         "从【首页】跳到【列表演演】—— 体验滚动位置记忆", CustomToast.Type.INFO),
                 new NavDestination(4, "列表演演二·复述", ListDemoSecondActivity.class,
                         "从【首页】跳到【列表演演二】—— 内容复述对比", CustomToast.Type.INFO),
-                new NavDestination(5, "生命周期演示", LifecycleDemoActivity.class,
+                new NavDestination(5, "列表演演三·自定义导航", ListDemoThirdActivity.class,
+                        "从【首页】跳到【列表演演三】—— 自定义底部导航样式", CustomToast.Type.INFO),
+                new NavDestination(6, "生命周期演示", LifecycleDemoActivity.class,
                         "从【首页】跳到【生命周期演示】—— 实时观察回调顺序", CustomToast.Type.INFO),
-                new NavDestination(6, "提示实验室", ToastLabActivity.class,
+                new NavDestination(7, "提示实验室", ToastLabActivity.class,
                         "从【首页】跳到【提示实验室】—— 对比三种 Toast", CustomToast.Type.INFO),
-                new NavDestination(7, "设置", SettingsActivity.class,
+                new NavDestination(8, "设置", SettingsActivity.class,
                         "从【首页】跳到【设置】—— 管理提示权限与样式", CustomToast.Type.INFO),
-                new NavDestination(8, "关于本项目", null,
+                new NavDestination(9, "关于本项目", null,
                         "上次访问：" + lastPageLabel() + " · LifeReApplication v2.0", CustomToast.Type.SUCCESS)
         );
     }

@@ -96,16 +96,20 @@ public class ListDemoSecondActivity extends BaseMenuActivity {
         return Arrays.asList(
                 new NavDestination(1, "返回本页", ListDemoSecondActivity.class,
                         "当前就在列表演示二，无需重复跳转", CustomToast.Type.WARNING),
-                new NavDestination(2, "章节学习", ChapterActivity.class,
-                        "从【列表演示二】跳到【章节学习】—— 页级进度记忆对比", CustomToast.Type.INFO),
-                new NavDestination(3, "生命周期演示", LifecycleDemoActivity.class,
-                        "从【列表演示二】跳到【生命周期演示】—— 看回调时序", CustomToast.Type.INFO),
-                new NavDestination(4, "提示实验室", ToastLabActivity.class,
-                        "从【列表演示二】跳到【提示实验室】—— 对比三种 Toast", CustomToast.Type.INFO),
-                new NavDestination(5, "设置", SettingsActivity.class,
-                        "从【列表演示二】跳到【设置】—— 管理提示权限", CustomToast.Type.INFO),
-                new NavDestination(6, "回到首页", MainActivity.class,
-                        "从【列表演示二】跳到【首页】—— 返回难题清单", CustomToast.Type.SUCCESS)
+                new NavDestination(2, "列表演演一", ListDemoActivity.class,
+                        "从【列表演演二】跳到【列表演演一】—— 精确恢复对比", CustomToast.Type.INFO),
+                new NavDestination(3, "列表演演三·自定义导航", ListDemoThirdActivity.class,
+                        "从【列表演演二】跳到【列表演演三】—— 对比自定义导航样式", CustomToast.Type.INFO),
+                new NavDestination(4, "章节学习", ChapterActivity.class,
+                        "从【列表演演二】跳到【章节学习】—— 页级进度记忆对比", CustomToast.Type.INFO),
+                new NavDestination(5, "生命周期演示", LifecycleDemoActivity.class,
+                        "从【列表演演二】跳到【生命周期演示】—— 看回调时序", CustomToast.Type.INFO),
+                new NavDestination(6, "提示实验室", ToastLabActivity.class,
+                        "从【列表演演二】跳到【提示实验室】—— 对比三种 Toast", CustomToast.Type.INFO),
+                new NavDestination(7, "设置", SettingsActivity.class,
+                        "从【列表演演二】跳到【设置】—— 管理提示权限", CustomToast.Type.INFO),
+                new NavDestination(8, "回到首页", MainActivity.class,
+                        "从【列表演演二】跳到【首页】—— 返回难题清单", CustomToast.Type.SUCCESS)
         );
     }
 }

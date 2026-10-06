@@ -58,6 +58,11 @@
         <item name="android:textColor">@color/text_primary</item>
     </style>
 
+    <!-- 列表演演三：BottomNavigationView 选中指示器（品牌色胶囊） -->
+    <style name="ThirdNavIndicator">
+        <item name="android:background">@drawable/bg_nav_indicator</item>
+    </style>
+
     <!-- Base application theme（日间） -->
     <style name="Base.Theme.LifeReApplication" parent="Theme.LifeRe.Core" />
 

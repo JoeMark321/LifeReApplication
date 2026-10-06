@@ -49,7 +49,11 @@
         <activity
                 android:name=".ui.list.ListDemoSecondActivity"
                 android:exported="false"
-                android:label="列表演示二" />
+                android:label="列表演演二" />
+        <activity
+                android:name=".ui.list.ListDemoThirdActivity"
+                android:exported="false"
+                android:label="列表演演三" />
         <activity
                 android:name=".ui.chapter.ChapterActivity"
                 android:exported="false"

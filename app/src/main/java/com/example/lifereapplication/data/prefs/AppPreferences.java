@@ -83,13 +83,22 @@ public class AppPreferences {
         sp.edit().putInt(KEY_LAST_CHAPTER, position).apply();
     }
 
-    /** 列表演示：上次选中的布局 tab（tag 字符串） */
+    /** 列表演演：上次选中的布局 tab（tag 字符串） */
     public String getListDemoTab() {
         return sp.getString(KEY_LIST_DEMO_TAB, null);
     }
 
     public void setListDemoTab(String tag) {
         sp.edit().putString(KEY_LIST_DEMO_TAB, tag).apply();
+    }
+
+    /** 通用 tab 记忆（按页面 key 隔离，列表演演三等新页面使用） */
+    public String getListTab(String pageKey) {
+        return sp.getString("list_tab." + pageKey, null);
+    }
+
+    public void setListTab(String pageKey, String tag) {
+        sp.edit().putString("list_tab." + pageKey, tag).apply();
     }
 
     public void setEnabled(String key, boolean value) {
