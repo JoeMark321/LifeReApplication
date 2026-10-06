@@ -122,29 +122,23 @@ public class ListFragment extends Fragment {
             layoutManager = new LinearLayoutManager(requireContext());
         }
 
-        // ---- 状态恢复（首帧定位，全程无抖动）----
-        // ① 先在 LayoutManager 上设置 pending anchor（scrollToPositionWithOffset
-        //    允许在 attach 前调用），首次布局即消费，不会出现"先画顶部再跳"的抖动；
-        // ② 再用 OnPreDrawListener 在首帧绘制前做一次像素级校正——消除
-        //    item margin/padding 锚点残差。
-        // 按模式分流：EXACT=偏移原样（该在哪就在哪）；ITEM_HEAD=偏移清零（完整显示）。
+        // ---- 状态恢复（两步确定性定位，杜绝逐轮漂移）----
+        // 第 1 步：pending anchor 统一用 offset=0（该值在所有 LayoutManager/ROM 下
+        //          定位结果确定：条目头贴着内容区顶），在 setAdapter 前调用，首帧即生效；
+        // 第 2 步：PreDraw（首帧绘制前）用 scrollBy 精确补齐 (savedTop - 0) 的像素差——
+        //          scrollBy 是纯像素滚动、零误差，最终 child.top == savedTop 逐像素一致。
+        // 旧实现把负偏移直接塞进 pending anchor，部分 ROM/网格下锚点解析不精确，
+        // 且 PreDraw 监听可能在目标 child 尚未布局时被移除 → 校正失效 → 每轮漂移。
         int[] state = ScrollStateKeeper.restore(requireContext(), listId);
         int[] safe = ScrollStateKeeper.clamp(state, ROW_COUNT, viewportHeight());
         int pendingPosition = -1;
-        int pendingOffset = 0;
-        int correctionTarget = 0;
+        int correctionDelta = 0;
         if (safe != null) {
             pendingPosition = safe[0];
-            if (restoreMode == MODE_EXACT) {
-                pendingOffset = safe[1];                       // 原样：半截就半截
-                correctionTarget = safe[1];                    // 校正回保存时的精确像素
-            } else {
-                pendingOffset = 0;                             // 对齐：条目完整贴顶
-                correctionTarget = recyclerView.getPaddingTop();
-            }
+            correctionDelta = restoreMode == MODE_EXACT ? safe[1] : recyclerView.getPaddingTop();
             if (layoutManager instanceof LinearLayoutManager) {
                 ((LinearLayoutManager) layoutManager)
-                        .scrollToPositionWithOffset(pendingPosition, pendingOffset);
+                        .scrollToPositionWithOffset(pendingPosition, 0);
             }
         }
 
@@ -152,7 +146,7 @@ public class ListFragment extends Fragment {
         recyclerView.setAdapter(adapter);
 
         if (pendingPosition >= 0) {
-            installFirstFrameCorrection(pendingPosition, correctionTarget);
+            installFirstFrameCorrection(pendingPosition, correctionDelta);
             if (getActivity() != null) {
                 ToastCenter.show(getActivity(),
                         restoreMode == MODE_EXACT
@@ -164,15 +158,13 @@ public class ListFragment extends Fragment {
     }
 
     /**
-     * 首帧绘制前的像素级校正：
-     * scrollToPositionWithOffset 的锚点不感知 item margin 与 RV paddingTop，
-     * 恢复后可能残留几 px~20px 偏差；在 PreDraw（首帧绘制前）把目标条目的
-     * child.top 校正到 targetTop，用户零感知。
-     *
-     * @param targetTop EXACT = 保存时的 child.getTop() 原值（可为负，半截）；
-     *                  ITEM_HEAD = paddingTop（条目完整贴顶）
+     * 首帧绘制前的像素级校正（scrollBy 纯像素滚动，零误差）：
+     * EXACT      → delta = 保存的 child.getTop() 原值（可为负，半截）；
+     * ITEM_HEAD  → delta = paddingTop（条目完整贴顶）。
+     * 监听直到目标 child 完成布局才移除并校正，杜绝"校正被跳过→逐轮漂移"。
+     * 条目在列表尾时 delta 会被 scrollBy 自然钳制到底（到底了就到底）。
      */
-    private void installFirstFrameCorrection(final int position, final int targetTop) {
+    private void installFirstFrameCorrection(final int position, final int delta) {
         final RecyclerView rv = recyclerView;
         if (rv == null) {
             return;
@@ -181,16 +173,16 @@ public class ListFragment extends Fragment {
                 new android.view.ViewTreeObserver.OnPreDrawListener() {
                     @Override
                     public boolean onPreDraw() {
-                        rv.getViewTreeObserver().removeOnPreDrawListener(this);
                         if (rv.getLayoutManager() instanceof LinearLayoutManager) {
                             android.view.View child =
                                     ((LinearLayoutManager) rv.getLayoutManager())
                                             .findViewByPosition(position);
-                            if (child != null) {
-                                int delta = targetTop - child.getTop();
-                                if (delta != 0) {
-                                    rv.scrollBy(0, delta);
-                                }
+                            if (child == null) {
+                                return true; // 目标条目尚未布局：保持监听，下帧再试
+                            }
+                            rv.getViewTreeObserver().removeOnPreDrawListener(this);
+                            if (delta != 0) {
+                                rv.scrollBy(0, delta);
                             }
                         }
                         return true;

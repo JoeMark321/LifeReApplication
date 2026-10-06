@@ -274,12 +274,12 @@ viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
 | 视觉结果 | 和退出瞬间逐像素一致 | 条目完整、从条目头开始 |
 | 适用语义 | 阅读进度（接着刚才那一眼继续看） | 复习模式（从这条重新看全貌） |
 
-**实现要点（两模式共用）**：
+**实现要点（两模式共用，v4.1 反漂移修正）**：
 
-1. **无抖动**：`scrollToPositionWithOffset` 在 `setAdapter` 前调用，pending anchor 首次布局即消费；
-2. **无残差**：`installFirstFrameCorrection(pos, targetTop)` 在 OnPreDraw（首帧绘制前）把目标条目 `child.top` 校正到 targetTop——EXACT 传保存的原始像素、ITEM_HEAD 传 `paddingTop`，抵消 item margin/padding 锚点偏差；
-3. **负偏移合法**：条目上半截滚出屏幕时 `child.getTop()` 为负，EXACT 模式必须原样保留（这是"精确"的一部分）；clamp 只过滤超出 viewport 的脏数据；
-4. **底部自然钳制**：条目贴近列表尾时系统自动贴底，不拉空白。
+1. **两步确定性定位（杜绝逐轮漂移）**：第 1 步 pending anchor 统一用 `offset=0`（该值在所有 LayoutManager/ROM 下定位结果确定）；第 2 步 PreDraw 内 `scrollBy(保存的像素差)` 补齐——`scrollBy` 是纯像素滚动、零误差，最终 `child.top == 保存值` 逐像素一致。旧实现把负偏移直接塞进 pending anchor，部分 ROM/网格下锚点解析不精确，导致"每轮重进都偏上一点、反复进出从 #58 漂到 #40"；
+2. **校正监听不空跑**：PreDraw 监听**直到目标 child 完成布局才移除并执行校正**，杜绝"校正被跳过→漂移"；
+3. **无抖动**：两步都发生在首帧绘制前，用户看不到任何跳变；
+4. **底部自然钳制**：delta 超出末尾时 `scrollBy` 自动钳制到底（到底了就到底）。
 
 ### 5A.4.1 能否全局设置状态保持？
 
