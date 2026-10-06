@@ -24,8 +24,14 @@
 **公共父主题**：日/夜主题共用 `Theme.LifeRe.Core`（values 定义，values-night 只做
 `Base.Theme.LifeReApplication parent=Theme.LifeRe.Core` 覆盖），避免两处维护。
 
-**实测**（模拟器 API 36 截屏验证）：状态栏图标渲染在品牌蓝背景上，标题"首页"
-完整可见，列表尾部不被手势条遮挡；夜间主题切换仅需覆盖颜色资源。
+**Toolbar 必须可长高（挖孔屏关键坑）**：所有布局的 Toolbar 写
+`layout_height=wrap_content` + `minHeight=?attr/actionBarSize`。
+若写死 `?attr/actionBarSize`，在挖孔屏上 padding=152px 后标题只剩 ~56px
+会被纵向裁切（MIUI 挖孔机实测）；wrap_content 让 Toolbar 被 padding 撑高，
+标题永远有完整的 actionBarSize 空间。
+
+**实测**（模拟器 API 36 + 真机 Android 17 挖孔屏截屏验证）：状态栏图标渲染在
+品牌蓝背景上，标题"首页"完整可见，列表尾部不被手势条遮挡。
 
 > 注意：横屏刘海缺口在左右两侧（cutout top=0），纵向布局无需处理侧向 insets；
 > 如需完美适配侧边刘海，可扩展监听 `displayCutout` 的 left/right。
