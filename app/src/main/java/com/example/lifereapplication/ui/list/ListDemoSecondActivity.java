@@ -64,7 +64,8 @@ public class ListDemoSecondActivity extends BaseMenuActivity {
         } else {
             String itemText = String.format(Locale.CHINA,
                     "条目 #%03d —— 滑动后退出再进入，会精确回到当前位置", safe[0] + 1);
-            textRecall.setText("上次看到：第 " + (safe[0] + 1) + " 条（偏移 " + safe[1] + "px）\n"
+            textRecall.setText("上次看到：第 " + (safe[0] + 1) + " 条（偏移 " + safe[1]
+                    + "px，条目头对齐策略）\n"
                     + "内容复述：" + itemText);
             textTiming.setText(String.format(Locale.CHINA,
                     "恢复耗时：%d ms（阈值 200ms）", cost));

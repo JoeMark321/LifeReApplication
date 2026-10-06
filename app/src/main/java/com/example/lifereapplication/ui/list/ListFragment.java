@@ -49,13 +49,11 @@ public class ListFragment extends Fragment {
     private static final int ROW_COUNT = 100;
 
     /**
-     * 恢复模式（演示一 / 演示二的刻意差异）：
-     * <ul>
-     *     <li>{@link #MODE_EXACT}：像素级精确恢复——保留负偏移，条目半截就恢复半截；
-     *     首帧即定位（无先画顶部再跳转的抖动）；</li>
-     *     <li>{@link #MODE_ITEM_HEAD}：条目头对齐——偏移清零，恢复时条目完整显示；
-     *     展示"记忆了条目、不记忆半截"的差异策略。</li>
-     * </ul>
+     * 恢复模式（历史演进）：
+     * v2 曾提供 MODE_EXACT（负偏移半截还原）与 MODE_ITEM_HEAD（偏移清零）；
+     * v3 按需求统一为「条目头对齐」——保存时偏移恒为 0、首条半截则记下一条，
+     * 恢复时条目完完整整贴顶，列表尾由 RV 自然钳制到底。
+     * 两个常量保留用于 API 兼容，当前行为一致。
      */
     public static final int MODE_EXACT = 0;
     public static final int MODE_ITEM_HEAD = 1;
@@ -126,19 +124,17 @@ public class ListFragment extends Fragment {
         // ① 先在 LayoutManager 上设置 pending anchor（scrollToPositionWithOffset
         //    允许在 attach 前调用），首次布局即消费，不会出现"先画顶部再跳"的抖动；
         // ② 再用 OnPreDrawListener 在首帧绘制前做一次像素级校正——消除
-        //    item margin/padding 带来的 1~2px~20px 残差（即此前"多出上方一小段"的瑕疵）。
+        //    item margin/padding 锚点残差。
+        // 保存语义 v3：offset 恒为 0 → 恢复时条目完完整整贴顶显示；
+        // 条目在列表尾贴不了顶时由 RV 自然钳制到底。
         int[] state = ScrollStateKeeper.restore(requireContext(), listId);
         int[] safe = ScrollStateKeeper.clamp(state, ROW_COUNT, viewportHeight());
         int pendingPosition = -1;
-        int pendingOffset = 0;
-        int exactTargetTop = 0;
         if (safe != null) {
             pendingPosition = safe[0];
-            exactTargetTop = safe[1]; // 原始语义：child.getTop()（含 margin/padding 的真实像素位）
-            pendingOffset = restoreMode == MODE_ITEM_HEAD ? 0 : safe[1];
             if (layoutManager instanceof LinearLayoutManager) {
                 ((LinearLayoutManager) layoutManager)
-                        .scrollToPositionWithOffset(pendingPosition, pendingOffset);
+                        .scrollToPositionWithOffset(pendingPosition, 0);
             }
         }
 
@@ -146,12 +142,10 @@ public class ListFragment extends Fragment {
         recyclerView.setAdapter(adapter);
 
         if (pendingPosition >= 0) {
-            installFirstFrameCorrection(pendingPosition, exactTargetTop);
+            installFirstFrameCorrection(pendingPosition);
             if (getActivity() != null) {
                 ToastCenter.show(getActivity(),
-                        restoreMode == MODE_ITEM_HEAD
-                                ? "已定位到第 " + (pendingPosition + 1) + " 条（条目头对齐，偏移清零）"
-                                : "已精确恢复：第 " + (pendingPosition + 1) + " 条（像素级）",
+                        "已定位到第 " + (pendingPosition + 1) + " 条（条目完整显示）",
                         CustomToast.Type.SUCCESS);
             }
         }
@@ -159,18 +153,16 @@ public class ListFragment extends Fragment {
 
     /**
      * 首帧绘制前的像素级校正：
-     * scrollToPositionWithOffset 的锚点计算不感知 item 的 margin 与 RV 的
-     * paddingTop，恢复后可能残留一小段偏差；在 PreDraw 里把目标条目的
-     * child.top 校正到保存时的精确像素位，用户看不到任何跳变。
-     *
-     * @param targetTop EXACT 模式 = 保存时的 child.getTop() 原值（可为负，半截）；
-     *                  ITEM_HEAD 模式 = paddingTop（条目完整地贴着内容区顶部）
+     * scrollToPositionWithOffset 的锚点不感知 item margin 与 RV paddingTop，
+     * 恢复后目标条目可能残留几 px~20px 的偏差；在 PreDraw（首帧绘制前）把
+     * 目标条目的 child.top 校正到 paddingTop（完整贴顶），用户零感知。
      */
-    private void installFirstFrameCorrection(final int position, final int targetTop) {
+    private void installFirstFrameCorrection(final int position) {
         final RecyclerView rv = recyclerView;
         if (rv == null) {
             return;
         }
+        final int targetTop = rv.getPaddingTop();
         rv.getViewTreeObserver().addOnPreDrawListener(
                 new android.view.ViewTreeObserver.OnPreDrawListener() {
                     @Override
@@ -231,7 +223,6 @@ public class ListFragment extends Fragment {
         }
         RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
         int position;
-        int offset;
         if (lm instanceof GridLayoutManager) {
             position = ((GridLayoutManager) lm).findFirstVisibleItemPosition();
         } else if (lm instanceof LinearLayoutManager) {
@@ -242,11 +233,17 @@ public class ListFragment extends Fragment {
         if (position < 0) {
             return;
         }
-        // 不减 paddingTop：scrollToPositionWithOffset 的坐标系就是相对 RV 顶边，
-        // 条目滚出屏幕时 top 为负（半截），恢复时要原样还原这一半
+        // 需求定义的保存语义（v3）：偏移量恒为 0，条目完完整整显示。
+        // ① 首条只剩下半截（top<0）→ 改记它下面第一条完整可见的条目；
+        // ② 首条完整可见 → 直接记它。
+        // 两种情况保存的 offset 都是 0 → 返回时该条目完整贴顶显示；
+        // 若条目贴近列表尾、贴不了顶，RecyclerView 会自然钳制到底（"到底了就到底"），
+        // 不会把尾部拉出空白。
         View firstChild = recyclerView.getChildAt(0);
-        int pixelOffset = firstChild == null ? 0 : firstChild.getTop();
-        ScrollStateKeeper.save(requireContext(), listId, position, pixelOffset);
+        if (firstChild != null && firstChild.getTop() < 0) {
+            position += 1;
+        }
+        ScrollStateKeeper.save(requireContext(), listId, position, 0);
     }
 
     @Override

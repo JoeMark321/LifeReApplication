@@ -265,21 +265,27 @@ viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
 
 首次进入则提示"暂无历史进度，先滑动再退出试试"。复述把状态记忆从"体感"变成"可验收的数据"。
 
-### 5A.4 演示一 vs 演示二：两种恢复策略（刻意区分，勿混为一谈）
+### 5A.4 演示一 / 演示二：统一「条目头对齐」恢复策略（v3，按需求重定义）
 
-| 维度 | 列表演演一（ListDemoActivity） | 列表演演二（ListDemoSecondActivity） |
-|---|---|---|
-| 恢复模式 | `ListFragment.MODE_EXACT` | `ListFragment.MODE_ITEM_HEAD` |
-| 偏移处理 | **原样保留**（含负偏移：条目半截滚出就恢复半截，如 -80px） | **强制清零**：定位到上次条目但 `offset=0`，条目**完完整整**贴顶显示 |
-| 定位精度 | 像素级（PreDraw 二次校正） | 条目级 |
-| 视觉结果 | 和退出瞬间完全一致 | 条目完整、从条目头开始 |
-| 适用语义 | "接着刚才看"（阅读进度） | "从某条重新看"（复习模式） |
+**需求原文**：返回时的偏移量要是 0——不管当前条目是否已部分滚出屏幕，一旦定位到某个条目，就让该条目**完完整整**显示出来；除非条目贴近列表尾无法贴顶，那就直接贴底（"到底了就到底"），属于正常列表行为。
 
-**恢复无瑕疵的实现（两模式共用）**：
+**保存语义（v3，[ListFragment.saveScrollState()](../app/src/main/java/com/example/lifereapplication/ui/list/ListFragment.java)）**：
 
-1. **无抖动**：`scrollToPositionWithOffset()` 在 `setLayoutManager` 之后、`setAdapter` 之前调用——pending anchor 在**首次布局**即消费，不再出现"先画顶部→再跳转"的闪动（旧版用 `post{}` 是抖动根源）；
-2. **无残差**：`scrollToPositionWithOffset` 的锚点不感知 item margin（卡片 6dp）与 RV paddingTop，恢复后会残留"上方一小段"；新增 `installFirstFrameCorrection()`——在 **OnPreDrawListener**（首帧绘制前）把目标条目的 `child.top` 校正到保存的精确像素位，用户零感知；
-3. **负偏移语义**：条目上半截滚出屏幕时 `child.getTop()` 为负（如 -80px），是合法状态，clamp 只过滤超出 viewport 的脏数据。
+1. 取 `findFirstVisibleItemPosition` + 首个子 View 的 `top`；
+2. 若 `top < 0`（首条只剩半截）→ **跳过它**，改记下一条（第一条完整可见的条目）；
+3. 偏移量**恒存 0**。
+
+**恢复表现**：
+
+- 目标条目**完整贴顶**（条目头对齐），绝不出现"上方多出半截/一大段"；
+- 条目贴近列表尾、贴不了顶 → RecyclerView 自然钳制到底，不会拉出空白；
+- 保存与恢复的偏移量恒为 0 → 不存在"返回时偏移量增大"的可能。
+
+**无瑕疵实现（沿用）**：
+
+1. **无抖动**：`scrollToPositionWithOffset` 在 `setAdapter` 前调用，pending anchor 首次布局即消费；
+2. **无残差**：`installFirstFrameCorrection()` 在 OnPreDraw（首帧绘制前）把目标条目 `child.top` 校正到 `paddingTop`，抵消 item margin/padding 锚点偏差；
+3. 历史 v2 的"负偏移半截还原"（MODE_EXACT）已按新需求**弃用**，常量保留仅为 API 兼容；一/二的差异不再在偏移策略，而在**演示二多出内容复述卡**（量化输出位置/策略/耗时）。
 
 ### 5A.5 详情页滚动记忆
 
