@@ -43,9 +43,12 @@ import com.example.lifereapplication.util.toast.ToastCenter;
  */
 public class ListFragment extends Fragment {
 
+    // 参数只走 arguments：进程被杀重建时，系统用无参构造 + arguments 重建 Fragment，
+    // 普通成员变量会丢、arguments 不会丢——这正是工厂方法 + Bundle 存在的根本原因。
     private static final String ARG_LIST_ID = "arg_list_id";
     private static final String ARG_SPAN = "arg_span";
     private static final String ARG_RESTORE_MODE = "arg_restore_mode";
+    /** 固定 100 条：足够滑出多屏，才能验证"跨屏精确恢复"的意义 */
     private static final int ROW_COUNT = 100;
 
     /**
@@ -71,6 +74,7 @@ public class ListFragment extends Fragment {
         return newInstance(listId, span, MODE_EXACT);
     }
 
+    /** 完整工厂方法：restoreMode 决定恢复语义（EXACT 像素级 / ITEM_HEAD 条目头对齐） */
     public static ListFragment newInstance(String listId, int span, int restoreMode) {
         ListFragment fragment = new ListFragment();
         Bundle args = new Bundle();
@@ -209,6 +213,10 @@ public class ListFragment extends Fragment {
         return glm;
     }
 
+    /**
+     * 视口高度兜底：onViewCreated 阶段 RecyclerView 还没走布局、getHeight()=0，
+     * 退而用整屏高度近似——clamp 只拿它防止偏移越界，近似值足够安全。
+     */
     private int viewportHeight() {
         return recyclerView.getHeight() > 0
                 ? recyclerView.getHeight()

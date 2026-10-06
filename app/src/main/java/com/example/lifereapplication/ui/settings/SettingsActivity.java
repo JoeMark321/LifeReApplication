@@ -48,6 +48,9 @@ public class SettingsActivity extends BaseMenuActivity {
         Switch switchNotify = findViewById(R.id.switchNotify);
         Switch switchTrace = findViewById(R.id.switchTrace);
 
+        // 为什么先回填 UI 再挂监听（监听在下方才注册）：程序化 setChecked
+        // 若发生在监听挂载之后会触发回调，把"初始化默认值"误当成用户操作
+        // 写回 prefs；先回填后挂监听从执行顺序上杜绝这一污染
         switchNative.setChecked(prefs.isNativeEnabled());
         switchCustom.setChecked(prefs.isCustomEnabled());
         switchModern.setChecked(prefs.isModernEnabled());
@@ -58,12 +61,16 @@ public class SettingsActivity extends BaseMenuActivity {
         // 中心圆球：点击弹跳 + 轻提示（弧度外观见 bg_sphere.xml）
         View sphere = findViewById(R.id.viewSphere);
         sphere.setOnClickListener(v -> {
+            // 120ms 放大 + 160ms 回缩：短促的"按下去弹回来"节奏，反馈明显又不打断
+            // 操作（时长为手调经验值，1.15 倍放大幅度肉眼可感又不夸张）
             v.animate().scaleX(1.15f).scaleY(1.15f).setDuration(120)
                     .withEndAction(() -> v.animate().scaleX(1f).scaleY(1f).setDuration(160).start())
                     .start();
             tip("圆球反馈：设置已就绪", CustomToast.Type.SUCCESS);
         });
 
+        // 回填样式单选：default 分支涵盖 MODERN 与一切未知/脏值，
+        // 与 ToastCenter.resolveStyle 的兜底策略（解析失败落 MODERN）保持一致
         switch (prefs.getToastStyle()) {
             case "NATIVE":
                 radioGroup.check(R.id.radioNative);
@@ -107,6 +114,12 @@ public class SettingsActivity extends BaseMenuActivity {
                 saveAndFeedback(AppPreferences.keyLifecycleTrace(), checked, "生命周期日志"));
     }
 
+    /**
+     * 六个开关共用的"写入 + 反馈"路径。
+     * 为什么 key 由 AppPreferences.keyXxx() 提供而不手写字符串：读写两端
+     * 引用同一常量工厂，杜绝拼写不一致导致的静默失效；为什么关闭时用
+     * WARNING 类型：语义上提醒"该类提示此后将完全静默"。
+     */
     private void saveAndFeedback(String key, boolean checked, String label) {
         prefs.setEnabled(key, checked);
         String state = checked ? "已开启" : "已关闭（完全静默）";
@@ -120,6 +133,7 @@ public class SettingsActivity extends BaseMenuActivity {
         return Page.SETTINGS;
     }
 
+    /** 菜单 id 取 1~4 的小整数：仅在本页菜单内匹配用，不会与 android.R.id 资源 id 冲突 */
     @Override
     protected List<NavDestination> destinations() {
         return Arrays.asList(

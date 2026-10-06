@@ -30,6 +30,9 @@ import java.util.List;
  *
  * <p>每个按钮对应文档「提示系统」一节的一种调用姿势，全部走统一出口
  * {@link ToastCenter} 时会自动应用用户在设置页里的开关。</p>
+ *
+ * <p>职责边界：纯演示页，不持有业务状态；除通知按钮组有权限回调外，
+ * 其余按钮都是一次性的独立演示，互不依赖。</p>
  */
 public class ToastLabActivity extends BaseMenuActivity {
 
@@ -38,6 +41,10 @@ public class ToastLabActivity extends BaseMenuActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_toast_lab);
         setupToolbar();
+
+        // 前三组（原生/自定义/现代化）故意直连各自实现——演示页要展示
+        // "原始调用姿势"；对照组在最后的 btnCenter：同一条消息走统一出口，
+        // 直观对比出样式路由与用户开关的效果差异。编号对应布局中的按钮分区。
 
         // 1. 原生
         Button btnNative = findViewById(R.id.btnNative);
@@ -85,11 +92,13 @@ public class ToastLabActivity extends BaseMenuActivity {
                         }));
 
         findViewById(R.id.btnNotify).setOnClickListener(v -> {
+            // 先探测再请求：已授权/已开启时直接发，避免每次点击都重复弹系统授权框
             if (NotificationHelper.canNotify(this)) {
                 NotificationHelper.showNotification(this, "生命周期Re",
                         "这是一条后台提示：点我回到首页");
             } else {
-                // Android 13+ 通知是运行时权限：首次点击先请求，授予后自动补发
+                // Android 13+ 通知是运行时权限：首次点击先请求，授予后自动补发。
+                // 1001 为本页自定义请求码（任意非 0 唯一值），回调里据此识别本次请求
                 requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
             }
         });
@@ -103,11 +112,16 @@ public class ToastLabActivity extends BaseMenuActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        // 双重过滤：只认本页发起的 1001 请求；grantResults 判空防请求被
+        // 取消/中断时返回空数组的边界情况
         if (requestCode == 1001 && grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            // 为什么要手动补发：授权前那次请求已被系统拦截丢弃，系统不会
+            // 自动重发，这里补一次才形成"请求→授权→收到"的完整闭环
             NotificationHelper.showNotification(this, "生命周期Re",
                     "通知权限已授予：这是一条后台提示，点我回到首页");
         } else {
+            // 拒绝不是静默失败：明确告知后果，用户才知道去哪里重新开启
             ToastCenter.show(this, "通知权限被拒绝：后台提示将不可用", CustomToast.Type.WARNING);
         }
     }
@@ -119,6 +133,7 @@ public class ToastLabActivity extends BaseMenuActivity {
         return Page.TOAST_LAB;
     }
 
+    /** 菜单 id 取 1~4 的小整数：仅在本页菜单内匹配用，不会与 android.R.id 资源 id 冲突 */
     @Override
     protected List<NavDestination> destinations() {
         return Arrays.asList(

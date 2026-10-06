@@ -38,9 +38,17 @@ import java.util.List;
  * <p><b>Fragment 生命周期要点：</b>show/hide 切换而非 replace ——
  * 列表视图不被销毁，状态保持只依赖 onPause 保存的精确位置；
  * 每个 Fragment 的 listId 独立，互不串扰。</p>
+ *
+ * <p><b>三个列表演演的刻意差异（教学对比）：</b>本页是<b>表演一</b>——
+ * 走 {@code MODE_EXACT} 像素级精确恢复："该在哪就在哪"，连半截滚出屏幕的
+ * 条目都按原样还原；表演二改为条目头对齐（{@code MODE_ITEM_HEAD}）；
+ * 表演三升级为 ViewPager2 横滑切页 + 自定义 tab 双向联动。
+ * 三页共用 ListFragment，只换恢复模式与导航形态，便于横向对比。</p>
  */
 public class ListDemoActivity extends BaseMenuActivity {
 
+    // tag 一值三用：FragmentManager 查找键、ListFragment 的 listId 种子（滚动状态隔离）、
+    // tab 记忆的存储 key——同一个字符串贯穿三处，天然不会出现 key 对不上的问题
     private static final String TAG_LINEAR = "linear";
     private static final String TAG_GRID2 = "grid2";
     private static final String TAG_GRID3 = "grid3";
@@ -86,12 +94,19 @@ public class ListDemoActivity extends BaseMenuActivity {
         } else {
             restoreId = R.id.nav_linear;
         }
-        bottomNav.setSelectedItemId(restoreId); // 触发 listener 完成首次展示与恢复
+        // 为什么用 setSelectedItemId 而不是直接调 showPrimary：
+        // 让 listener 成为唯一的展示入口，"恢复路径"与"用户点击路径"
+        // 走同一份代码，避免两处逻辑各自演化后漂移
+        bottomNav.setSelectedItemId(restoreId);
     }
 
     private AppPreferences prefs;
 
-    /** 主栏切换（竖屏即唯一栏）：span 随屏幕方向自适应 */
+    /**
+     * 主栏切换（竖屏即唯一栏）：span 随屏幕方向自适应。
+     * 为什么先 findFragmentByTag 再 add：show/hide 策略下 Fragment 常驻 FM，
+     * 不查直接 add 会造出第二个实例，旧实例的滚动状态随之丢失。
+     */
     private void showPrimary(String tag) {
         FragmentManager fm = getSupportFragmentManager();
         Fragment existing = fm.findFragmentByTag(tag);
@@ -107,7 +122,10 @@ public class ListDemoActivity extends BaseMenuActivity {
                 .commit();
     }
 
-    /** 横屏副栏：并排展示第二种布局 */
+    /**
+     * 横屏副栏：并排展示与主栏互补的布局（主栏线性→副栏网格；主栏网格→副栏线性），
+     * 宽屏下一屏能同时对比两种布局的状态保持表现。
+     */
     private void showSecondaryIfLand(String tag) {
         if (!isLandscape) {
             return;
@@ -125,6 +143,7 @@ public class ListDemoActivity extends BaseMenuActivity {
                 .commit();
     }
 
+    /** 切换前统一隐藏：用 GONE 而非 remove——视图留在内存里，各自的滚动状态才保得住 */
     private void hideAll(FragmentManager fm) {
         for (Fragment f : fm.getFragments()) {
             if (f.getView() != null) {
@@ -138,6 +157,7 @@ public class ListDemoActivity extends BaseMenuActivity {
         return TAG_LINEAR.equals(tag) ? 1 : 0;
     }
 
+    /** 副栏 span：与主栏互补（主栏线性=1 → 副栏 0 自适应网格；主栏网格 → 副栏线性） */
     private int secondarySpanFor(String primaryTag) {
         return TAG_LINEAR.equals(primaryTag) ? 0 : 1;
     }

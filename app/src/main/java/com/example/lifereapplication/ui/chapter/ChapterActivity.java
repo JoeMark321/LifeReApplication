@@ -28,6 +28,10 @@ import java.util.List;
  * <p>联动关系：{@code ViewPager2 ↔ ChapterPagerAdapter(FragmentStateAdapter) ↔ ListFragment}，
  * TabLayout 通过 {@link TabLayoutMediator} 与 ViewPager2 双向同步（点 tab 翻页 /
  * 翻页选中 tab），全部由一行 Mediator 代码完成。</p>
+ *
+ * <p><b>与"列表演演三"的对照：</b>同样是 ViewPager2 + tab，本页用官方
+ * TabLayout + Mediator 一行完成双向联动（标准组件方案）；表演三手写
+ * 自定义 tab 并显式维护双向绑定（联动原理教学）。两页互为参照。</p>
  */
 public class ChapterActivity extends BaseMenuActivity {
 
@@ -64,7 +68,10 @@ public class ChapterActivity extends BaseMenuActivity {
                 (tab, position) -> tab.setText(pagerAdapter.pageTitle(position))
         ).attach();
 
-        // 翻页时给一句独特提示（走节流队列，连翻不会刷屏），并持久化进度
+        // 翻页时给一句独特提示（走节流队列，连翻不会刷屏），并持久化进度。
+        // 为什么在 onPageSelected 即时写进度而不是攒到 onPause：
+        // 章节进度以"翻到的章"为最小单位，翻页即达成，即时写保证
+        // 任何时刻进程被杀都不丢进度
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {

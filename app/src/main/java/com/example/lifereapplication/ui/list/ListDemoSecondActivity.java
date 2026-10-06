@@ -35,9 +35,17 @@ import java.util.Locale;
  *     <li>列表演示一 = <b>tab 级</b>布局选择记忆；</li>
  *     <li>列表演演二 = 同一列表的<b>条目级</b>记忆 + 内容复述展示。</li>
  * </ul>
+ *
+ * <p><b>三个列表演演的刻意差异（教学对比）：</b>本页是<b>表演二</b>——
+ * 恢复策略改为 {@code MODE_ITEM_HEAD} 条目头对齐：偏移清零，恢复时该条目
+ * 完整贴顶，用半截条目的像素精度换取"永远看到完整条目"的观感；
+ * 表演一走 {@code MODE_EXACT} 像素级精确恢复；表演三走 ViewPager2
+ * 横滑切页 + 自定义 tab 双向联动。三页共用 ListFragment，只换恢复模式与导航形态。</p>
  */
 public class ListDemoSecondActivity extends BaseMenuActivity {
 
+    // listId 刻意不同于表演一：两页共用同一个 ListFragment 实现，
+    // 只靠不同的存储 key 隔离各自的滚动状态，互不串扰
     private static final String LIST_ID = "demo.second";
     private static final int ROW_COUNT = 100;
 
@@ -51,6 +59,7 @@ public class ListDemoSecondActivity extends BaseMenuActivity {
         TextView textTiming = findViewById(R.id.textTiming);
 
         // 计时：restore 全程（含可能的磁盘回读）必须远低于 200ms 阈值
+        // 用 elapsedRealtime 而非 currentTimeMillis：前者单调递增，不受改时间/校时影响
         long t0 = SystemClock.elapsedRealtime();
         int[] state = ScrollStateKeeper.restore(this, LIST_ID);
         int[] safe = ScrollStateKeeper.clamp(state, ROW_COUNT, getResources()

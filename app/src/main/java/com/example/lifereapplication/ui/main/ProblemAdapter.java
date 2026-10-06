@@ -34,9 +34,15 @@ import java.util.List;
  */
 public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
+    /** 头部引导区（说明 + 流程图 + 快捷卡 + 横幅容器），固定占第 0 位 */
     private static final int TYPE_HEADER = 0;
+    /** 难题卡片，占第 1..n 位 */
     private static final int TYPE_PROBLEM = 1;
 
+    /**
+     * 流程图下方的讲解文案：下标与 {@link #stageIndex(String)} 的阶段顺序一致，
+     * 高亮切到第 N 个阶段就同步展示第 N 条，让"图形变化 + 文字解释"成对出现。
+     */
     private static final String[] STAGE_HINTS = {
             "onCreate：Activity 被创建，只做一次性初始化（找 View、恢复状态、建 ViewModel）。",
             "onStart：界面即将可见但还不能交互，适合刷新轻量数据。",
@@ -47,18 +53,21 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             "onDestroy：最终清理，把持有的引用置空，避免内存泄漏。"
     };
 
-    private final List<Problem> problems = new ArrayList<>();
-    private final List<Problem> featured = new ArrayList<>();
-    private final OnItemClickListener listener;
-    private final OnHeaderActionListener headerListener;
-    private final OnBannerClickListener bannerListener;
+    private final List<Problem> problems = new ArrayList<>();  // 正文卡片数据
+    private final List<Problem> featured = new ArrayList<>();  // 横幅数据缓存：Header 未创建前先存在这里
+    private final OnItemClickListener listener;                // 卡片点击 → Activity
+    private final OnHeaderActionListener headerListener;       // 快捷卡点击 → Activity
+    private final OnBannerClickListener bannerListener;        // 横幅点击 → Activity
 
+    /** Header 全生命周期只有一个实例：持有引用，Activity 可在任意回调时刻驱动流程图刷新 */
     private HeaderHolder headerHolder;
 
+    /** 卡片点击：跳详情是页面职责，adapter 不持 Intent、不感知目标页 */
     public interface OnItemClickListener {
         void onItemClick(Problem problem);
     }
 
+    /** 快捷卡点击：只传 tag 标识哪张卡，tag → 目标页的映射收在 Activity 侧 */
     public interface OnHeaderActionListener {
         void onQuickActionClick(String tag);
     }
@@ -68,6 +77,12 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         void onBannerClick(Problem problem);
     }
 
+    /**
+     * 三个回调由 Activity 注入：adapter 只上报"用户点了什么"，
+     * "点了之后去哪"是 V 层（页面）的导航决策。
+     * setHasStableIds(true) 配合 {@link #getItemId(int)}：数据刷新时
+     * RecyclerView 能按 id 判定复用，避免无谓的全量重绑与闪跳。
+     */
     public ProblemAdapter(OnItemClickListener listener,
                           OnHeaderActionListener headerListener,
                           OnBannerClickListener bannerListener) {
@@ -77,6 +92,10 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         setHasStableIds(true);
     }
 
+    /**
+     * 整表替换正文数据。为什么不用 DiffUtil：条目十几条且有稳定 id，
+     * 全量刷新成本可忽略，差分计算的复杂度收益为负。
+     */
     public void setProblems(List<Problem> list) {
         problems.clear();
         if (list != null) {
@@ -101,11 +120,17 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    /** 第 0 位固定是 Header：头部与卡片共用同一滚动/回收体系，无需单独布局 */
     @Override
     public int getItemViewType(int position) {
         return position == 0 ? TYPE_HEADER : TYPE_PROBLEM;
     }
 
+    /**
+     * 按 ViewType 装配 Holder。为什么在这里顺手缓存 headerHolder：
+     * Header 不会销毁重建，拿到引用后 updateLifecycleStage 才能在
+     * 任意生命周期回调里即时驱动流程图，而不必每次 findViewById。
+     */
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -120,6 +145,7 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return new ProblemHolder(view);
     }
 
+    /** 分发绑定：Header 占索引 0，正文数据因此整体 -1 偏移 */
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof HeaderHolder) {
@@ -129,6 +155,10 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    /**
+     * 绑定头部：快捷卡接缩放反馈，流程图先落 onCreate 初值
+     * （随后 Activity 的生命周期回调会实时覆盖高亮）。
+     */
     private void bindHeader(HeaderHolder holder) {
         holder.cardFirst.setOnClickListener(v -> {
             animateClick(v, () -> headerListener.onQuickActionClick("beginner"));
@@ -152,6 +182,10 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    /**
+     * 绑定一张难题卡。序号用展示位置（与用户看到的列表序号一致）；
+     * 难度按语义着色；点击先播缩放动画、动画结束才触发跳转（见 animateClick）。
+     */
     private void bindProblem(ProblemHolder holder, Problem problem, int position) {
         holder.stage.setText(String.valueOf(position));
         holder.title.setText(problem.getTitle());
@@ -164,6 +198,8 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 animateClick(v, () -> listener.onItemClick(problem)));
     }
 
+    /** 难度 → 颜色资源：颜色语义集中到资源文件，换主题只改 xml 不动代码；
+     *  ContextCompat 保证各系统版本取色方式一致 */
     private int difficultyColor(View view, String difficulty) {
         int resId;
         if ("入门".equals(difficulty) || "简单".equals(difficulty)) {
@@ -176,7 +212,11 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return ContextCompat.getColor(view.getContext(), resId);
     }
 
-    /** 由 Activity 在自身生命周期回调时驱动，实时高亮流程图 */
+    /**
+     * 由 Activity 在自身生命周期回调时驱动，实时高亮流程图。
+     * headerHolder 为 null 说明 Header 尚未创建（早期回调先于列表布局），
+     * 直接忽略即可，无需排队补偿。
+     */
     public void updateLifecycleStage(String stage) {
         if (headerHolder == null) {
             return;
@@ -189,6 +229,8 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         headerHolder.flowHint.setText(STAGE_HINTS[index]);
     }
 
+    /** 阶段名 → 全局序号（跨行累计，与 LifecycleFlowView 的行排布顺序一致）；
+     *  七个固定字符串线性查找即可，建 Map 反而多余 */
     private int stageIndex(String stage) {
         String[] all = {"onCreate", "onStart", "onResume", "onPause", "onStop", "onRestart", "onDestroy"};
         for (int i = 0; i < all.length; i++) {
@@ -199,6 +241,13 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return -1;
     }
 
+    /**
+     * 点击反馈：90ms 缩小 → 90ms 回弹 → 动画结束才执行真正动作。
+     * 为什么把动作推迟到动画结束：先给手指"已按下"的确认感再跳转；
+     * 总时长 180ms 低于可感知的迟滞阈值，不会让人觉得卡。
+     * 为什么用 View.animate 属性动画：只变换 scaleX/scaleY，走 GPU 合成、
+     * 不触发布局重测；两段式用 AnimatorListenerAdapter 串接最直白。
+     */
     private void animateClick(View view, Runnable action) {
         view.animate()
                 .scaleX(0.96f)
@@ -228,11 +277,17 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return problems.size() + 1; // +1 为头部
     }
 
+    /** Header 用固定 -1 哨兵（Problem 的 id 从正数开始，永不冲突），
+     *  正文用业务主键——stableIds 的复用判定因此始终准确 */
     @Override
     public long getItemId(int position) {
         return position == 0 ? -1L : problems.get(position - 1).getId();
     }
 
+    /**
+     * 头部 Holder：View 引用构造时缓存；bannerAdapter 故意非 final，
+     * 延迟到首次 bind 才创建（见 {@link #bindHeader}），复用时直接沿用。
+     */
     static class HeaderHolder extends RecyclerView.ViewHolder {
         final LifecycleFlowView flowView;
         final TextView flowHint;
@@ -257,6 +312,7 @@ public class ProblemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    /** 难题卡 Holder：View 引用构造时缓存，bind 阶段零 findViewById */
     static class ProblemHolder extends RecyclerView.ViewHolder {
         final TextView stage;
         final TextView title;
